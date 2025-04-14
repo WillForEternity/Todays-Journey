@@ -1,0 +1,1068 @@
+/* --- view-specific-styles.css --- */
+/* Contains styles for Calendar View and Notes View specifically, */
+/* including layout panels, lists, editors, calendar grid, folder tree, etc. */
+/* Also includes responsive media queries at the end. */
+
+/* --- View Container Layout & Hiding --- */
+/* Calendar View Container */
+.app-container.calendar-view {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    height: calc(100vh - var(--header-height));
+    gap: 0;
+}
+
+/* Notes View Container */
+.notes-app-container.notes-view {
+    display: grid;
+    grid-template-columns: var(--notes-sidebar-width) 1fr; /* Sidebar | Main Area */
+    height: calc(100vh - var(--header-height));
+    background-color: var(--bg-color);
+}
+
+/* View Hiding Logic */
+body.notes-view-active .app-container.calendar-view { display: none; }
+body.calendar-view-active .notes-app-container.notes-view { display: none; }
+
+/* --- ===================== --- */
+/* --- Calendar View Styles --- */
+/* --- ===================== --- */
+
+/* --- Left Panel: Daily Tasks (Calendar View) --- */
+.daily-tasks-panel {
+    background-color: var(--ui-bg-color);
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    /* Apply shared scrollbar style */
+    scrollbar-width: thin;
+    scrollbar-color: var(--hover-bg-color) var(--ui-bg-color);
+    height: 100%;
+}
+.daily-tasks-panel::-webkit-scrollbar { width: 8px; }
+.daily-tasks-panel::-webkit-scrollbar-track { background: var(--ui-bg-color); }
+.daily-tasks-panel::-webkit-scrollbar-thumb {
+    background-color: var(--hover-bg-color);
+    border-radius: 4px;
+    border: 2px solid var(--ui-bg-color);
+}
+
+#dailyTasksTitle {
+    display: none; /* Hide the H2; main H1 shows the title */
+}
+
+/* [Calendar] Task Input Area Specifics */
+#calendarInputArea { /* ID added in HTML */
+    margin-bottom: 25px;
+}
+/* taskInput uses shared .input-area input[type="text"] style */
+/* addButton uses shared .input-area button style */
+
+.important-toggle {
+     margin-left: 5px;
+     display: flex;
+     align-items: center;
+     cursor: pointer;
+     flex-shrink: 0;
+}
+.important-toggle input { display: none; } /* Hide checkbox */
+.important-toggle .star {
+    font-size: 1.5em;
+    color: #666;
+    transition: color var(--transition-speed) ease;
+    line-height: 1;
+}
+.important-toggle input:checked + .star {
+    color: var(--important-color);
+}
+
+
+/* --- [Calendar] Task List Styles --- */
+#taskList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1;
+    min-height: 0;
+}
+
+#taskList li,
+#importantList li { /* Shared styles for both CALENDAR task lists */
+    background-color: var(--bg-color);
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-left: 4px solid var(--accent-color); /* Default accent border */
+    cursor: pointer;
+    transition: background-color var(--transition-speed) ease,
+                border-color var(--transition-speed) ease,
+                opacity var(--transition-speed) ease,
+                transform var(--transition-speed) ease;
+    position: relative;
+    min-height: 50px;
+    gap: 10px;
+}
+#taskList li:hover,
+#importantList li:hover {
+    background-color: var(--hover-bg-color);
+}
+
+/* Recurring task instance style */
+#taskList li.is-recurring-instance {
+    border-left-style: dashed;
+}
+
+/* Completed task style */
+#taskList li.completed,
+#importantList li.completed {
+    border-left-color: var(--completed-border-color);
+    background-color: #2a2a2d;
+}
+#taskList li.completed .task-content-wrapper,
+#importantList li.completed .task-content-wrapper {
+    opacity: 0.7;
+}
+#taskList li.completed .task-text,
+#importantList li.completed .task-text,
+#taskList li.completed .task-time,
+#importantList li.completed .task-time {
+    text-decoration: line-through;
+    color: var(--completed-text-color);
+}
+
+/* Timeless tasks */
+#taskList li.timeless-task:not(.completed) {
+    border-left-color: var(--timeless-task-color);
+}
+
+#taskList li.timeless-task:not(.completed) .task-text {
+    color: var(--text-color); /* Use theme's default text color */
+}
+
+/* Make sure completed styling overrides timeless task styling */
+#taskList li.timeless-task.completed {
+    border-left-color: var(--completed-border-color);
+    background-color: #2a2a2d;
+}
+
+#taskList li.timeless-task.completed .task-text {
+    text-decoration: line-through;
+    color: var(--completed-text-color);
+}
+
+#taskList li.timeless-task.completed .task-content-wrapper {
+    opacity: 0.7;
+}
+
+.task-content-wrapper {
+    flex-grow: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    overflow: hidden;
+    cursor: default;
+}
+.task-time {
+    font-size: 0.9em;
+    color: var(--time-color);
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.task-text {
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+.task-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.important-star {
+    font-size: 1.3em;
+    cursor: pointer;
+    color: #666;
+    transition: color var(--transition-speed) ease, transform 0.1s ease;
+    line-height: 1;
+}
+.important-star.is-important {
+    color: var(--important-color);
+}
+.important-star:hover {
+    transform: scale(1.15);
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    font-size: 1.3em;
+    line-height: 1;
+    transition: color var(--transition-speed) ease, transform 0.1s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.delete-btn svg {
+    width: 1em; 
+    height: 1em; 
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+.delete-btn:hover {
+    color: var(--delete-button-hover-color);
+    transform: scale(1.15);
+}
+
+
+/* --- Right Panel: Sidebar (Calendar View) --- */
+.sidebar-panel {
+    background-color: var(--bg-color);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border-left: 1px solid var(--hover-bg-color);
+    overflow: hidden;
+}
+
+/* Calendar Container within Sidebar */
+.calendar-container {
+    padding: 20px;
+    border-bottom: 1px solid var(--hover-bg-color);
+    background-color: var(--ui-bg-color);
+    flex-shrink: 0;
+}
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.calendar-header button {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 5px;
+    transition: color var(--transition-speed) ease;
+    line-height: 1;
+}
+.calendar-header button:hover {
+    color: var(--accent-color);
+}
+#monthYear {
+    font-weight: 500;
+    color: var(--accent-color);
+    text-align: center;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    text-align: center;
+}
+.calendar-grid div { /* Base style for all grid cells */
+    padding: 8px 5px;
+    font-size: 0.9em;
+    border-radius: var(--border-radius);
+    cursor: default;
+    transition: background-color var(--transition-speed) ease, border var(--transition-speed) ease, color var(--transition-speed) ease;
+    position: relative;
+    border: 1px solid transparent;
+    min-height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.calendar-day-header {
+    font-weight: bold;
+    color: #888;
+    padding-bottom: 8px;
+}
+.calendar-day { /* Specific to actual day cells */
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+/* Task Density Background */
+.calendar-day[data-task-count]:not(.selected-day):not(.other-month) {
+    background-color: rgba(var(--task-gradient-base-rgb), var(--task-alpha, 0));
+}
+.calendar-day[data-task-count]:not(.selected-day):not(.other-month):hover {
+    background-color: color-mix(in srgb,
+        rgba(var(--task-gradient-base-rgb), var(--task-alpha, 0)) 75%,
+        var(--hover-bg-color) 25%
+    );
+    color: var(--text-color);
+}
+.calendar-day:not([data-task-count]):not(.selected-day):not(.other-month):hover {
+    background-color: var(--hover-bg-color);
+}
+
+.calendar-day.today:not(.selected-day) {
+    border: 1px solid var(--accent-color);
+    font-weight: bold;
+    background-clip: padding-box;
+    color: var(--accent-color);
+}
+.calendar-day.selected-day {
+    background-color: var(--accent-color) !important;
+    color: #111 !important;
+    font-weight: bold;
+    border-color: var(--accent-color) !important;
+}
+.calendar-day.other-month {
+    color: #555;
+    background-color: transparent !important;
+    cursor: default;
+    pointer-events: none;
+}
+.calendar-day.other-month.today {
+    border-color: rgba(4, 164, 159, 0.3);
+    color: #777;
+    font-weight: normal;
+}
+
+/* Important Tasks Container within Sidebar */
+.important-tasks-container {
+    padding: 20px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+.important-tasks-container h3 {
+    color: var(--important-color);
+    margin-bottom: 15px;
+    font-weight: 500;
+    text-align: center;
+    flex-shrink: 0;
+}
+#importantList { /* Specific list in calendar sidebar */
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    flex-grow: 1;
+    min-height: 0;
+    /* Apply shared scrollbar style */
+    scrollbar-width: thin;
+    scrollbar-color: var(--hover-bg-color) var(--bg-color);
+}
+#importantList::-webkit-scrollbar { width: 8px; }
+#importantList::-webkit-scrollbar-track { background: var(--bg-color); }
+#importantList::-webkit-scrollbar-thumb {
+    background-color: var(--hover-bg-color);
+    border-radius: 4px;
+    border: 2px solid var(--bg-color);
+}
+
+/* Styling for items in the Important list (inherits shared styles) */
+#importantList li {
+    border-left-color: var(--important-color);
+    font-size: 0.95em;
+    padding: 10px 12px;
+    gap: 10px;
+    align-items: center;
+}
+#importantList li .task-date { /* Specific style for date */
+    font-size: 0.8em;
+    color: #aaa;
+    margin-left: auto;
+    padding-left: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    align-self: center;
+}
+#importantList li .task-content-wrapper {
+    flex-grow: 1;
+    margin-right: 0;
+}
+/* Hide action buttons in important list */
+#importantList li .task-actions {
+     display: none;
+}
+
+
+/* --- ===================== --- */
+/* --- Notes View Styles    --- */
+/* --- ===================== --- */
+
+/* Notes Sidebar (Folders) */
+.notes-sidebar {
+    background-color: var(--ui-bg-color);
+    border-right: 1px solid var(--hover-bg-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    height: 100%;
+    /* Apply shared scrollbar style */
+    scrollbar-width: thin;
+    scrollbar-color: var(--hover-bg-color) var(--ui-bg-color);
+}
+.notes-sidebar::-webkit-scrollbar { width: 8px; }
+.notes-sidebar::-webkit-scrollbar-track { background: var(--ui-bg-color); }
+.notes-sidebar::-webkit-scrollbar-thumb {
+    background-color: var(--hover-bg-color);
+    border-radius: 4px;
+    border: 2px solid var(--ui-bg-color);
+}
+
+.notes-sidebar h3 {
+    text-align: center;
+    margin-bottom: 15px;
+    color: var(--accent-color);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+/* Container for Add Folder Button AND Input Area */
+.notes-sidebar-actions {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column; /* Stack button and input area */
+    flex-shrink: 0;
+    gap: 10px; /* Add gap between button and input area when shown */
+}
+
+/* Uses shared .action-button style */
+#addRootFolderBtn { width: 100%; }
+
+/* Folder Input Area */
+.folder-input-area {
+    /* Based on shared .input-area */
+    display: flex; /* Controlled by JS */
+    gap: 8px;
+    padding: 5px;
+    background-color: var(--bg-color);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--hover-bg-color);
+    align-items: center;
+    margin-bottom: 0; /* Remove default margin */
+}
+
+/* Specific input for folder name */
+#newFolderNameInput {
+    flex-grow: 1;
+    padding: 8px 10px;
+    border: none;
+    background-color: var(--input-bg-color);
+    color: var(--text-color);
+    border-radius: var(--border-radius);
+    font-family: var(--font-family);
+    font-size: 0.95em;
+    transition: box-shadow var(--transition-speed) ease;
+    min-width: 50px; /* Prevent extreme shrinking */
+}
+#newFolderNameInput::placeholder { color: #7a7a7a; opacity: 1; }
+#newFolderNameInput:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(4, 164, 159, 0.3);
+}
+
+/* Buttons within the folder input area */
+.folder-input-area button {
+    /* Based on shared .input-area button */
+    padding: 8px;
+    font-size: 1em;
+    line-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.folder-input-area button svg {
+    width: 16px; height: 16px; stroke-width: 2.5;
+}
+
+/* Confirm button */
+#confirmAddFolderBtn {
+    background-color: var(--button-color);
+    color: #111;
+}
+#confirmAddFolderBtn:hover { background-color: var(--button-hover-color); }
+
+/* Cancel button */
+#cancelAddFolderBtn {
+    background-color: var(--cancel-button-color);
+    color: #eee;
+}
+#cancelAddFolderBtn:hover { background-color: var(--cancel-button-hover-color); color: #fff; }
+
+/* Adjustments for when folder input is active */
+.notes-sidebar-actions.adding-folder #addRootFolderBtn {
+    display: none;
+}
+
+/* Folder Tree - File Explorer Style */
+#folderTree {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1;
+    min-height: 0;
+    font-size: 0.95em;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Folder container - holds folder item and children */
+.folder-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.folder-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 6px 4px 6px;
+    cursor: pointer;
+    position: relative;
+    border-radius: 4px;
+    transition: background-color 0.12s ease, color 0.12s ease;
+    border-left: 2px solid transparent;
+}
+
+.folder-item .folder-content {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    overflow: hidden;
+    gap: 6px;
+}
+
+.folder-item .folder-content svg {
+    flex-shrink: 0;
+    color: var(--folder-icon-color);
+    transition: transform 0.2s ease, color 0.12s ease;
+}
+
+.folder-item.expanded .folder-content svg {
+    color: var(--folder-active-color);
+}
+
+.folder-item .folder-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.12s ease;
+}
+
+.folder-item.selected {
+    background-color: var(--folder-selected-bg);
+    border-left-color: var(--folder-active-color);
+}
+
+.folder-item.selected .folder-content .folder-name {
+    color: var(--folder-active-color);
+    font-weight: 500;
+}
+
+.folder-item:hover:not(.selected) {
+    background-color: var(--folder-hover-bg);
+}
+
+.folder-item .folder-actions {
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    gap: 5px;
+}
+
+.folder-item:hover .folder-actions {
+    opacity: 1;
+}
+
+.folder-item .folder-actions button {
+    background: none;
+    border: none;
+    padding: 2px;
+    cursor: pointer;
+    color: var(--folder-action-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    transition: color 0.1s ease, background-color 0.1s ease;
+}
+
+.folder-item .folder-actions button:hover {
+    color: var(--folder-action-hover-color);
+    background-color: var(--folder-action-hover-bg);
+}
+
+.folder-item.adding-subfolder {
+    background-color: var(--folder-adding-bg);
+}
+
+/* Adding connecting lines for visual hierarchy */
+.subfolder-container {
+    position: relative;
+    padding-left: 15px;
+    margin-left: 10px;
+    border-left: 1px solid var(--folder-line-color);
+}
+
+/* Subfolder container animation */
+.subfolder-container {
+    overflow: hidden;
+    transition: opacity 0.2s ease;
+}
+
+.folder-item.expanded + .subfolder-container {
+    opacity: 1;
+}
+
+.folder-item:not(.expanded) + .subfolder-container {
+    opacity: 0.7;
+}
+
+/* All UL elements in the tree (subfolder containers) */
+#folderTree ul.subfolder-container {
+    list-style: none;
+    padding-left: 20px; /* Indentation for child folders */
+    margin: 4px 0 0 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+/* Vertical connecting lines for subfolders */
+#folderTree ul.subfolder-container:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 8px;
+    height: 100%;
+    width: 1px;
+    background-color: var(--border-color);
+    opacity: 0.6;
+}
+
+/* Horizontal connector lines for subfolder items */
+#folderTree ul.subfolder-container > .folder-container > .folder-item:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -12px;
+    width: 12px;
+    height: 1px;
+    background-color: var(--border-color);
+    opacity: 0.6;
+}
+
+/* Notes Main Area (List + Editor) */
+.notes-main-area {
+    display: grid;
+    grid-template-columns: var(--notes-list-width) 1fr;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Notes List Panel */
+.notes-list-panel {
+    border-right: 1px solid var(--hover-bg-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: var(--bg-color);
+    height: 100%;
+}
+.notes-list-header {
+    padding: 15px 20px; /* Adjust padding slightly if needed */
+    border-bottom: 1px solid var(--hover-bg-color);
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 10px; /* Add gap between elements */
+}
+
+/* --- START: Go to Parent Button Style --- */
+.parent-folder-button {
+    padding: 6px 8px; /* Make it slightly smaller */
+    flex-shrink: 0; /* Prevent shrinking */
+    /* Inherits .action-button styles */
+    margin-right: 5px; /* Space before title */
+}
+.parent-folder-button svg {
+    width: 18px; /* Slightly larger icon maybe */
+    height: 18px;
+}
+/* Optional label style */
+/* .parent-folder-button .button-label { font-size: 0.9em; } */
+/* --- END: Go to Parent Button Style --- */
+
+
+.notes-list-header h3 { /* Title */
+    margin: 0;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-grow: 1; /* Allow title to take up space */
+    min-width: 50px; /* Prevent shrinking too much */
+}
+/* Use shared .action-button style */
+#addNoteBtn {
+    width: auto;
+    margin-left: auto; /* Push New Note button to the right */
+}
+
+
+#noteList {
+    list-style: none;
+    padding: 10px;
+    margin: 0;
+    overflow-y: auto;
+    flex-grow: 1;
+    min-height: 0;
+    /* Apply shared scrollbar style */
+    scrollbar-width: thin;
+    scrollbar-color: var(--hover-bg-color) var(--bg-color);
+}
+#noteList::-webkit-scrollbar { width: 8px; }
+#noteList::-webkit-scrollbar-track { background: var(--bg-color); }
+#noteList::-webkit-scrollbar-thumb {
+    background-color: var(--hover-bg-color);
+    border-radius: 4px;
+    border: 2px solid var(--bg-color);
+}
+
+.note-list-item {
+    padding: 12px 15px;
+    margin-bottom: 6px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    background-color: var(--ui-bg-color);
+    transition: background-color var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed);
+    border: 1px solid transparent;
+    border-left: 3px solid var(--hover-bg-color);
+}
+.note-list-item:hover {
+    background-color: var(--hover-bg-color);
+    border-left-color: var(--hover-bg-color);
+}
+.note-list-item.selected {
+    background-color: var(--selected-bg-color);
+    border-left-color: var(--accent-color);
+    color: #fff;
+}
+/* Animation class added via JS */
+.note-list-item.newly-added {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.note-list-item h4 {
+    font-size: 1em;
+    margin-bottom: 4px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.note-list-item p {
+    font-size: 0.85em;
+    color: #aaa;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Container for notes list empty states */
+#notesListEmptyStatesContainer {
+    flex-grow: 1;
+    display: flex; /* To center content vertically */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* Prevent container itself from overflowing */
+}
+/* Individual empty states inside the container */
+#notesListEmptyStatesContainer .empty-state {
+     flex-grow: 0; /* Don't let individual ones grow */
+     padding: 10px 20px; /* Smaller padding */
+     display: none; /* Hidden by default, shown by JS */
+}
+/* JS will show the container AND the relevant inner empty state */
+
+
+/* Notes Editor Panel */
+.notes-editor-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--bg-color);
+}
+
+/* Placeholder shown when no note is selected */
+.editor-placeholder {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    text-align: center;
+    padding: 20px;
+    height: 100%;
+    user-select: none;
+}
+.editor-placeholder svg {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 15px;
+    stroke-width: 1.5;
+}
+
+/* Editor container when a note IS selected */
+#noteEditor {
+    display: flex; /* Controlled by JS */
+    flex-direction: column;
+    height: 100%;
+    padding: 20px;
+    gap: 15px;
+}
+#noteTitleInput {
+    padding: 12px 15px;
+    border: 1px solid var(--hover-bg-color);
+    background-color: var(--input-bg-color);
+    color: var(--text-color);
+    border-radius: var(--border-radius);
+    font-family: var(--font-family);
+    font-size: 1.2em;
+    font-weight: 500;
+    flex-shrink: 0;
+    transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+}
+#noteTitleInput:focus {
+    outline: none;
+    border-color: var(--button-color);
+    box-shadow: 0 0 0 2px rgba(4, 164, 159, 0.3);
+}
+
+#noteContentInput {
+    flex-grow: 1;
+    min-height: 100px;
+    padding: 15px;
+    border: 1px solid var(--hover-bg-color);
+    background-color: var(--input-bg-color);
+    color: var(--text-color);
+    border-radius: var(--border-radius);
+    font-family: var(--font-family);
+    font-size: 1em;
+    line-height: 1.6;
+    resize: none;
+    overflow-y: auto;
+    transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+    /* Apply shared scrollbar style */
+    scrollbar-width: thin;
+    scrollbar-color: var(--hover-bg-color) var(--input-bg-color);
+}
+#noteContentInput::-webkit-scrollbar { width: 8px; }
+#noteContentInput::-webkit-scrollbar-track { background: var(--input-bg-color); }
+#noteContentInput::-webkit-scrollbar-thumb {
+    background-color: var(--hover-bg-color);
+    border-radius: 4px;
+    border: 2px solid var(--input-bg-color);
+}
+#noteContentInput:focus {
+    outline: none;
+    border-color: var(--button-color);
+    box-shadow: 0 0 0 2px rgba(4, 164, 159, 0.3);
+}
+
+.note-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+#noteStatus {
+    font-size: 0.85em;
+    color: #888;
+    margin-right: auto;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* Use shared .action-button style */
+#saveNoteBtn { width: auto; }
+#deleteNoteBtn {
+    /* Uses shared button styles */
+    width: auto;
+    border-color: var(--cancel-button-color);
+    color: var(--cancel-button-color);
+}
+#deleteNoteBtn:hover {
+    background-color: var(--delete-button-hover-color);
+    border-color: var(--delete-button-hover-color);
+    color: #fff;
+}
+
+
+/* --- ======================== --- */
+/* --- Responsive adjustments --- */
+/* --- ======================== --- */
+@media (max-width: 900px) {
+    /* Calendar View */
+    .app-container.calendar-view {
+        grid-template-columns: 1fr; /* Stack panels */
+    }
+    .sidebar-panel { /* Calendar sidebar */
+        border-left: none;
+        border-top: 1px solid var(--hover-bg-color);
+        height: auto;
+        min-height: 250px;
+        max-height: 50vh;
+        overflow: hidden;
+    }
+     .calendar-container, .important-tasks-container {
+        padding: 15px;
+     }
+    .daily-tasks-panel { /* Calendar task list */
+         height: auto;
+         min-height: 300px;
+         padding: 20px;
+    }
+
+    /* Notes View */
+    :root {
+        --notes-sidebar-width: 220px;
+        --notes-list-width: 250px;
+    }
+    .notes-app-container.notes-view {
+        grid-template-columns: minmax(200px, var(--notes-sidebar-width)) 1fr;
+    }
+    .notes-main-area {
+        grid-template-columns: minmax(200px, var(--notes-list-width)) 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    body {
+        font-size: 15px;
+        padding-top: calc(var(--header-height) - 10px);
+    }
+     .app-header {
+        height: calc(var(--header-height) - 10px);
+        padding: 0 10px;
+     }
+     #appTitle { font-size: 1.1em; }
+     .view-toggle-button { margin-right: 8px; padding: 6px; }
+     .view-toggle-button svg { width: 20px; height: 20px; }
+
+    /* --- Stack everything vertically on mobile --- */
+     :root { /* Reset widths for stacked view */
+        --notes-sidebar-width: 100%;
+        --notes-list-width: 100%;
+     }
+
+    /* Calendar View Stacked */
+     .app-container.calendar-view {
+        height: calc(100vh - (var(--header-height) - 10px));
+     }
+     .sidebar-panel { /* Calendar sidebar */
+        max-height: none; min-height: 200px;
+     }
+     .daily-tasks-panel { /* Calendar task list */
+        padding: 15px; min-height: 250px;
+     }
+     .input-area { /* Base input area adjustment */
+         margin-bottom: 15px;
+         gap: 8px;
+     }
+      /* Specific override for calendar task input area */
+      #calendarInputArea input[type="text"], #calendarInputArea button {
+         padding: 10px 12px;
+         font-size: 0.95em;
+     }
+     #taskList li, #importantList li {
+         padding: 10px 12px;
+         gap: 8px;
+     }
+
+
+    /* Notes View becomes single column */
+    .notes-app-container.notes-view {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr; /* Sidebar takes auto, Main Area takes rest */
+        height: calc(100vh - (var(--header-height) - 10px));
+    }
+
+    .notes-sidebar {
+        height: auto;
+        max-height: 35vh; /* Allow sidebar to scroll if long */
+        border-right: none;
+        border-bottom: 1px solid var(--hover-bg-color);
+        padding: 15px;
+        order: 1; /* Show sidebar first */
+    }
+    .notes-sidebar h3 { margin-bottom: 10px; font-size: 1.1em; }
+    .notes-sidebar-actions { margin-bottom: 10px; }
+     .folder-input-area input[type="text"], .folder-input-area button {
+         padding: 8px 10px; font-size: 0.9em;
+     }
+
+
+    .notes-main-area {
+        grid-template-columns: 1fr; /* Full width */
+        grid-template-rows: auto 1fr; /* List auto height, editor takes rest */
+        height: 100%; /* Fill the remaining space */
+        order: 2; /* Show main area after sidebar */
+        overflow: hidden;
+    }
+
+    .notes-list-panel {
+        height: auto;
+        max-height: 40vh; /* Allow list to scroll if long */
+        border-right: none;
+        border-bottom: 1px solid var(--hover-bg-color);
+        order: 1; /* List first within main area */
+        overflow: hidden; /* Let internal list scroll */
+    }
+    .notes-list-header {
+        padding: 10px 15px; /* Adjust padding */
+        gap: 8px;
+     }
+     .notes-list-header h3 { font-size: 1em; }
+     .parent-folder-button { padding: 5px 7px; margin-right: 3px;}
+     .parent-folder-button svg { width: 16px; height: 16px;}
+     #noteList { padding: 8px; }
+    .note-list-item { padding: 10px 12px; }
+
+    .notes-editor-panel {
+        height: 100%; /* Fill the remaining space */
+        order: 2; /* Editor second within main area */
+    }
+    #noteEditor { padding: 15px; gap: 10px; }
+    #noteTitleInput { font-size: 1.1em; padding: 10px 12px; }
+    #noteContentInput { font-size: 0.95em; padding: 12px; }
+    .note-editor-actions { gap: 8px; }
+    #noteStatus { font-size: 0.8em; }
+    /* Adjust editor buttons if needed */
+    .note-editor-actions button { padding: 6px 10px; font-size: 0.85em; }
+    .note-editor-actions button svg { width: 14px; height: 14px; }
+
+
+     /* Modal adjustments */
+     .modal-dialog { padding: 20px; }
+}

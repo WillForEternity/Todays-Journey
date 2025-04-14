@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journey & Notes Planner</title>
+    <!-- Link Base Styles First -->
+    <link rel="stylesheet" href="base-styles.css">
+    <!-- Link View-Specific Styles Second -->
+    <link rel="stylesheet" href="view-specific-styles.css">
+    <!-- Feather Icons via CDN -->
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body>
+
+    <!-- App Header with Toggle -->
+    <div class="app-header">
+        <button id="viewToggleBtn" class="view-toggle-button" title="Switch View">
+            <!-- Icon will be set by JS -->
+            <i data-feather="book"></i> <!-- Initial icon guess -->
+        </button>
+        <h1 id="appTitle"></h1> <!-- Set initial text by JS -->
+    </div>
+
+    <!-- ======================= -->
+    <!-- Calendar View Container -->
+    <!-- ======================= -->
+    <div class="app-container calendar-view"> <!-- Initially displayed -->
+        <!-- Left Panel: Daily Tasks -->
+        <div class="daily-tasks-panel">
+            <h2 id="dailyTasksTitle">Today's Journey</h2> <!-- Hidden by CSS -->
+            <!-- [Calendar] Input Area -->
+            <div class="input-area" id="calendarInputArea">
+                <input type="text" id="taskInput" placeholder="Add a task for the selected day...">
+                <label class="important-toggle" title="Mark as important">
+                    <input type="checkbox" id="importantCheckbox">
+                    <span class="star">☆</span>
+                </label>
+                <button id="addButton">Add</button>
+            </div>
+            <ul id="taskList"></ul>
+            <p id="dailyEmptyState" class="empty-state">No tasks for this day.</p>
+        </div>
+
+        <!-- Right Panel: Calendar Sidebar -->
+        <div class="sidebar-panel">
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <button id="prevMonthBtn"><</button>
+                    <span id="monthYear">Month Year</span>
+                    <button id="nextMonthBtn">></button>
+                </div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+            <div class="important-tasks-container">
+                <h3>Important</h3>
+                <ul id="importantList"></ul>
+                <p id="importantEmptyState" class="empty-state">No important tasks yet.</p>
+            </div>
+        </div>
+    </div>
+    <!-- End Calendar View Container -->
+
+    <!-- ===================== -->
+    <!-- Notes View Container  -->
+    <!-- ===================== -->
+    <div class="notes-app-container notes-view" style="display: none;"> <!-- Initially hidden -->
+        <div class="notes-sidebar">
+            <!-- Add Folder Actions / Input Area -->
+            <div class="notes-sidebar-actions">
+                 <button id="addRootFolderBtn" class="action-button" title="Add Root Folder">
+                     <i data-feather="folder-plus"></i> New Folder
+                 </button>
+                 <!-- Folder Input Area -->
+                 <div class="input-area folder-input-area" id="addFolderInputArea" style="display: none;">
+                    <input type="text" id="newFolderNameInput" placeholder="Folder name...">
+                    <button id="confirmAddFolderBtn" title="Save Folder (Enter)">
+                        <i data-feather="check"></i>
+                    </button>
+                    <button id="cancelAddFolderBtn" title="Cancel (Esc)">
+                        <i data-feather="x"></i>
+                    </button>
+                </div>
+            </div>
+            <ul id="folderTree">
+                <!-- Folder structure will be rendered here -->
+            </ul>
+            <p id="foldersEmptyState" class="empty-state">No folders yet.</p>
+        </div>
+        <div class="notes-main-area">
+            <div class="notes-list-panel">
+                <div class="notes-list-header">
+                    <h2 id="notesListTitle">Notes</h2>
+                    <button id="addNoteBtn" class="action-button" title="Add Note to Selected Folder" disabled>
+                        <i data-feather="file-plus"></i> New Note
+                    </button>
+                </div>
+                <ul id="noteList">
+                    <!-- Notes for the selected folder -->
+                </ul>
+                 <!-- Combined empty states for notes list area -->
+                 <div id="notesListEmptyStatesContainer">
+                    <p id="notesSelectFolderEmptyState" class="empty-state">Select a folder to see notes.</p>
+                    <p id="notesInFolderEmptyState" class="empty-state" style="display: none;">No notes in this folder.</p>
+                 </div>
+            </div>
+            <div class="notes-editor-panel">
+                <div id="editorPlaceholder" class="editor-placeholder">
+                    <i data-feather="edit-3"></i>
+                    <p>Select a note to edit or create a new one.</p>
+                </div>
+                <div id="noteEditor" style="display: none;">
+                    <input type="text" id="noteTitleInput" placeholder="Note Title">
+                    <textarea id="noteContentInput" placeholder="Start writing your note..."></textarea>
+                    <div class="note-editor-actions">
+                         <span id="noteStatus"></span>
+                         <button id="saveNoteBtn" class="action-button" title="Save Note (Ctrl+S)"><i data-feather="save"></i> Save</button>
+                         <button id="deleteNoteBtn" class="action-button" title="Delete Note"><i data-feather="trash-2"></i> Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Notes View Container -->
+
+
+    <!-- Shared Modal Structure (for Calendar Task Details) -->
+    <div id="taskDetailsModal" class="modal-overlay">
+        <div class="modal-dialog">
+            <h3 id="modalTitle">Task Details</h3>
+            <div class="modal-content">
+                <div class="modal-input-group">
+                    <label for="modalTimeInput">Time (Optional):</label>
+                    <input type="time" id="modalTimeInput">
+                </div>
+                <div class="modal-input-group">
+                    <label for="modalRecurringCheckbox">
+                        <input type="checkbox" id="modalRecurringCheckbox">
+                        Weekly Recurring?
+                    </label>
+                     <span class="modal-recurring-note">Task will appear every week on this day.</span>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="modalCancelBtn" class="modal-button modal-button-cancel">Cancel</button>
+                <button id="modalConfirmBtn" class="modal-button modal-button-confirm">Add Task</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- Load JavaScript Files -->
+    <!-- ===================== -->
+    <!-- 1. Shared logic, DB setup, view switching -->
+    <script src="view-toggle.js"></script>
+    <!-- 2. Original Calendar logic -->
+    <script src="script.js"></script>
+    <!-- 3. Notes logic -->
+    <script src="notes.js"></script>
+
+    <script>
+        // Initialize the application via the shared script
+        document.addEventListener('DOMContentLoaded', App.init);
+    </script>
+</body>
+</html>
