@@ -351,6 +351,9 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
         // Get theme colors based on mode
         const theme = getThemeColors(mode);
         
+        // Process the note content to expand image references
+        const processedContent = processContentForExport(noteContent);
+        
         // Create PDF document with proper configuration
         const pdf = new jspdf.jsPDF({
             orientation: 'portrait',
@@ -385,7 +388,7 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
         const contentHeight = pageHeight - margin.top - margin.bottom;
         
         // Parse and prepare the note content
-        const formattedContent = NotesApp.formatNoteContent(noteContent);
+        const formattedContent = NotesApp.formatNoteContent(processedContent);
         
         // Create a DOM parser to work with the formatted content
         const parser = new DOMParser();
@@ -475,7 +478,7 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
             // Handle different element types
             if (element.classList.contains('header-h1')) {
                 // Handle H1 headers
-                pdf.setFontSize(14);
+                pdf.setFontSize(16); // Increased from 14
                 pdf.setFont('helvetica', 'bold');
                 
                 // Set header color
@@ -554,6 +557,62 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
                 pdf.text(element.textContent, margin.left, yPosition);
                 yPosition += 10;
                 
+            } else if (element.classList.contains('note-image-container') || element.tagName === 'IMG' || element.querySelector('img')) {
+                // Handle images
+                let img = element.tagName === 'IMG' ? element : element.querySelector('img');
+                
+                // If we have a container with an image inside
+                if (!img && element.classList.contains('note-image-container')) {
+                    img = element.querySelector('img');
+                }
+                
+                if (img && img.src) {
+                    // Check if we need a new page
+                    if (yPosition > pageHeight - margin.bottom - 50) { // Reserve more space for images
+                        // Add page number to current page
+                        addPageNumber(pdf, currentPage, theme);
+                        
+                        // Add a new page
+                        pdf.addPage();
+                        currentPage++;
+                        
+                        // Fill background
+                        pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
+                        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+                        
+                        // Reset y position to top margin
+                        yPosition = margin.top;
+                    }
+                    
+                    try {
+                        // Calculate image dimensions while maintaining aspect ratio
+                        const maxWidth = contentWidth;
+                        const maxHeight = 100; // Max height in mm for the image
+                        
+                        // Add image to PDF
+                        pdf.addImage(
+                            img.src, 
+                            'JPEG', 
+                            margin.left, 
+                            yPosition, 
+                            maxWidth, 
+                            maxHeight, 
+                            undefined, 
+                            'FAST', 
+                            0
+                        );
+                        
+                        // Update y position with image height plus margin
+                        yPosition += maxHeight + 10;
+                    } catch (err) {
+                        console.error('Error adding image to PDF:', err);
+                        // Add an error placeholder instead
+                        pdf.setTextColor(255, 0, 0);
+                        pdf.text('[Image could not be processed]', margin.left, yPosition + 5);
+                        yPosition += 10;
+                    }
+                }
+                
             } else if (element.classList.contains('bullet')) {
                 // Handle bullet points
                 pdf.setFontSize(11);
@@ -588,56 +647,127 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
                     pdf.setTextColor(0, 0, 0);
                 }
                 
-                // Handle potential text wrapping by breaking it into lines
-                const text = element.textContent;
-                const textWidth = pdf.getTextWidth(text);
-                
-                if (textWidth <= contentWidth) {
-                    // Short enough to fit on one line
-                    pdf.text(text, margin.left, yPosition);
-                    yPosition += 6;
-                } else {
-                    // Need to wrap text
-                    const words = text.split(' ');
-                    let currentLine = '';
+                // Check if the line contains inline code (text wrapped in backticks)
+                const codeMatches = element.innerHTML.match(/`([^`]+)`/g);
+                if (codeMatches) {
+                    // Split the text by code segments
+                    let parts = element.innerHTML.split(/(`[^`]+`)/g);
+                    let xPos = margin.left;
+                    let lineHeight = 6;
                     
-                    for (let j = 0; j < words.length; j++) {
-                        const word = words[j];
-                        const testLine = currentLine + (currentLine ? ' ' : '') + word;
-                        const testWidth = pdf.getTextWidth(testLine);
-                        
-                        if (testWidth > contentWidth) {
-                            // Check if we need a new page
-                            if (yPosition > pageHeight - margin.bottom - 15) {
-                                // Add page number to current page
-                                addPageNumber(pdf, currentPage, theme);
-                                
-                                // Add a new page
-                                pdf.addPage();
-                                currentPage++;
-                                
-                                // Fill background
-                                pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
-                                pdf.rect(0, 0, pageWidth, pageHeight, 'F');
-                                
-                                // Reset y position to top margin
-                                yPosition = margin.top;
-                            }
+                    // Set up text colors based on theme
+                    const textRGB = theme.text === '#ffffff' || theme.text === '#fff' ? 
+                        { r: 255, g: 255, b: 255 } : 
+                        { r: 0, g: 0, b: 0 };
+                    const codeColor = theme.codeText === '#5ccfe6' ? 
+                        { r: 92, g: 207, b: 230 } : 
+                        { r: 0, g: 123, b: 255 };
+                    
+                    for (let part of parts) {
+                        // Check if this part is code (wrapped in backticks)
+                        if (part.startsWith('`') && part.endsWith('`')) {
+                            // Set code style (background rectangle first)
+                            const codeText = part.substring(1, part.length - 1);
                             
-                            pdf.text(currentLine, margin.left, yPosition);
-                            yPosition += 6;
-                            currentLine = word;
-                        } else {
-                            currentLine = testLine;
+                            // Get text width for the background rectangle
+                            pdf.setFont('courier', 'normal');
+                            pdf.setFontSize(10);
+                            const textWidth = pdf.getTextWidth(codeText);
+                            
+                            // Draw code background rectangle
+                            const bgColor = mode === 'dark' ? 
+                                { r: 92, g: 207, b: 230, a: 0.1 } : // Dark mode - cyan with 10% opacity
+                                { r: 0, g: 123, b: 255, a: 0.1 };   // Light mode - blue with 10% opacity
+                            
+                            // Set background rectangle with slight padding
+                            pdf.setFillColor(bgColor.r, bgColor.g, bgColor.b);
+                            const padding = 2; // mm
+                            const rectHeight = 5; // mm
+                            pdf.rect(
+                                xPos - padding/2, 
+                                yPosition - rectHeight + padding/2, 
+                                textWidth + padding, 
+                                rectHeight, 
+                                'F'
+                            );
+                            
+                            // Set code text color
+                            pdf.setTextColor(codeColor.r, codeColor.g, codeColor.b);
+                            
+                            // Draw code text
+                            pdf.text(codeText, xPos, yPosition);
+                            
+                            // Update position
+                            xPos += textWidth + padding;
+                            
+                            // Reset text color for normal text
+                            pdf.setTextColor(textRGB.r, textRGB.g, textRGB.b);
+                            pdf.setFont('helvetica', 'normal');
+                            pdf.setFontSize(11);
+                        } else if (part.trim() !== '') {
+                            // Regular text
+                            pdf.text(part, xPos, yPosition);
+                            xPos += pdf.getTextWidth(part);
                         }
                     }
                     
-                    // Add the last line if any
-                    if (currentLine) {
-                        pdf.text(currentLine, margin.left, yPosition);
+                    // Move to next line
+                    yPosition += lineHeight;
+                } else {
+                    // Handle potential text wrapping by breaking it into lines
+                    const text = element.textContent;
+                    const textWidth = pdf.getTextWidth(text);
+                    
+                    if (textWidth <= contentWidth) {
+                        // Short enough to fit on one line
+                        pdf.text(text, margin.left, yPosition);
                         yPosition += 6;
+                    } else {
+                        // Need to wrap text
+                        const words = text.split(' ');
+                        let currentLine = '';
+                        
+                        for (let j = 0; j < words.length; j++) {
+                            const word = words[j];
+                            const testLine = currentLine + (currentLine ? ' ' : '') + word;
+                            const testWidth = pdf.getTextWidth(testLine);
+                            
+                            if (testWidth > contentWidth) {
+                                // Check if we need a new page
+                                if (yPosition > pageHeight - margin.bottom - 15) {
+                                    // Add page number to current page
+                                    addPageNumber(pdf, currentPage, theme);
+                                    
+                                    // Add a new page
+                                    pdf.addPage();
+                                    currentPage++;
+                                    
+                                    // Fill background
+                                    pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
+                                    pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+                                    
+                                    // Reset y position to top margin
+                                    yPosition = margin.top;
+                                }
+                                
+                                pdf.text(currentLine, margin.left, yPosition);
+                                yPosition += 6;
+                                currentLine = word;
+                            } else {
+                                currentLine = testLine;
+                            }
+                        }
+                        
+                        // Add the last line if any
+                        if (currentLine) {
+                            pdf.text(currentLine, margin.left, yPosition);
+                            yPosition += 6;
+                        }
                     }
                 }
+                
+                // Add a bit of space after each element
+                yPosition += 2;
             }
             
             // Add a bit of space after each element
@@ -681,6 +811,29 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
             }
         }, 5000);
     }
+};
+
+// Helper function to process the raw note content to handle images
+const processContentForExport = (content) => {
+    if (!content || typeof content !== 'string') return content;
+    
+    // Access the image storage if available
+    let imageStorage = {};
+    if (typeof ImageHandler !== 'undefined' && typeof ImageHandler.getImageStorage === 'function') {
+        imageStorage = ImageHandler.getImageStorage();
+    }
+    
+    // Replace image ID markers with the full image data for PDF export
+    return content.replace(/!\[image:(img_[0-9]+_[0-9]+)\]/g, (match, imageId) => {
+        const imageData = imageStorage[imageId];
+        if (imageData) {
+            // Return the full image data for PDF processing
+            return `![image](${imageData})`;
+        } else {
+            // If image data not found, return a placeholder
+            return '![Image not available]';
+        }
+    });
 };
 
 // Call init when the document is fully loaded
