@@ -939,7 +939,7 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
 .note-preview .header-h1 {
     font-size: 1.3em;
     font-weight: bold;
-    margin: 10px 0 6px;
+    margin: 5px 0 3px;
     color: var(--accent-color);
     border-bottom: 1px solid var(--hover-bg-color);
     padding-bottom: 3px;
@@ -948,7 +948,7 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
 .note-preview .header-h2 {
     font-size: 1.15em;
     font-weight: bold;
-    margin: 8px 0 4px;
+    margin: 4px 0 2px;
     color: var(--accent-color);
 }
 
@@ -964,18 +964,14 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
 
 /* Bullet point formatting */
 .note-preview p.bullet {
-    margin-bottom: 4px;
+    margin-bottom: 0;
     position: relative;
-}
-
-.note-preview p.bullet.indented {
-    border-left: 2px solid var(--hover-bg-color);
-    margin-left: 6px;
+    white-space: pre-wrap; /* Preserve spaces */
 }
 
 /* Indented content for bullets in preview */
 .note-preview p {
-    margin: 0 0 8px 0;
+    margin: 0;
 }
 
 .note-preview p.indented {

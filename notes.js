@@ -1140,18 +1140,15 @@ NotesApp.formatNoteContent = (content) => {
             // Level 2 header: ## Header text
             return `<div class="header-h2">${line.replace(/^##\s+/, '')}</div>`;
         } else {
-            // Process bullet points
+            // Process bullet points - maintain original dash and spacing
             const bulletMatch = line.match(/^(\s*)-(\s+)(.*)$/);
             if (bulletMatch) {
                 const indentation = bulletMatch[1]; // Spaces before dash
+                const spacesAfterDash = bulletMatch[2]; // Spaces after dash
                 const bulletContent = bulletMatch[3]; // Content after dash and spaces
                 
-                // Calculate indentation level (6 spaces = 1 level)
-                const indentLevel = Math.floor(indentation.length / 6);
-                const indentClass = indentLevel > 0 ? ' indented' : '';
-                
-                // Add bullet point with proper indentation
-                return `<p class="bullet${indentClass}" style="padding-left: ${indentLevel * 20}px">• ${bulletContent}</p>`;
+                // Preserve the exact spacing and dash style
+                return `<p class="bullet">${indentation}-${spacesAfterDash}${bulletContent}</p>`;
             } else {
                 // Regular text
                 return line ? `<p>${line}</p>` : '<p>&nbsp;</p>';
@@ -1172,6 +1169,7 @@ NotesApp.formatNoteContent = (content) => {
  * Handles key events in the note content area for special formatting
  * - Supports creating and continuing bullet points with "- "
  * - Supports indentation with Tab key (indents entire bullet by 6 spaces)
+ * - Supports outdentation with Shift+Tab (removes 6 spaces of indentation)
  * - Auto-continues bullets on Enter key
  * - Monitors backtick pairs for code formatting
  */
@@ -1197,19 +1195,38 @@ NotesApp.handleNoteContentKeyDown = (e) => {
         const beforeLine = editor.value.substring(0, lineStart);
         const afterLine = editor.value.substring(lineStart);
         
-        // Check if we're on a bullet point line
-        const bulletMatch = currentLine.match(/^(\s*)-(  .*)$/);
-        if (bulletMatch) {
-            // For bullet points, add 6 spaces to the entire line
-            // This indents the whole bullet (dash included)
-            editor.value = beforeLine + "      " + afterLine;
-            editor.selectionStart = start + 6;
-            editor.selectionEnd = end + 6;
-        } else {
-            // For non-bullet lines, add 6 spaces of indentation
-            editor.value = beforeLine + "      " + afterLine;
-            editor.selectionStart = start + 6;
-            editor.selectionEnd = end + 6;
+        // Handling Shift+Tab for outdenting
+        if (e.shiftKey) {
+            // Check if there are at least 6 spaces at the beginning of the line to remove
+            const leadingSpacesMatch = currentLine.match(/^(\s+)/);
+            if (leadingSpacesMatch && leadingSpacesMatch[1].length >= 6) {
+                // Remove 6 spaces from the beginning
+                const updatedLine = currentLine.substring(6);
+                editor.value = beforeLine + updatedLine + editor.value.substring(lineEnd === -1 ? editor.value.length : lineEnd);
+                
+                // Adjust selection positions
+                const newStart = Math.max(lineStart, start - 6);
+                const newEnd = Math.max(lineStart, end - 6);
+                editor.selectionStart = newStart;
+                editor.selectionEnd = newEnd;
+            }
+        } 
+        // Regular Tab (already handled)
+        else {
+            // Check if we're on a bullet point line
+            const bulletMatch = currentLine.match(/^(\s*)-(  .*)$/);
+            if (bulletMatch) {
+                // For bullet points, add 6 spaces to the entire line
+                // This indents the whole bullet (dash included)
+                editor.value = beforeLine + "      " + afterLine;
+                editor.selectionStart = start + 6;
+                editor.selectionEnd = end + 6;
+            } else {
+                // For non-bullet lines, add 6 spaces of indentation
+                editor.value = beforeLine + "      " + afterLine;
+                editor.selectionStart = start + 6;
+                editor.selectionEnd = end + 6;
+            }
         }
         
         // Trigger the input event to notify of changes
