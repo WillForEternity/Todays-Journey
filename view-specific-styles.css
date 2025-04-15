@@ -984,6 +984,29 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
     min-height: 1em;
 }
 
+/* PDF Export Button and Notification */
+#exportPdfBtn {
+    margin-right: 5px;
+}
+
+#exportPdfBtn i {
+    margin-right: 4px;
+}
+
+.pdf-export-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 15px;
+    background-color: var(--accent-color);
+    color: #fff;
+    border-radius: 4px;
+    z-index: 9999;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
 /* --- ======================== --- */
 /* --- Responsive adjustments --- */
 /* --- ======================== --- */

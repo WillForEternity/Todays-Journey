@@ -159,10 +159,12 @@
     <script src="script.js"></script>
     <!-- 3. Notes logic -->
     <script src="notes.js"></script>
-
+    <script src="pdf-export.js"></script>
     <script>
-        // Initialize the application via the shared script
-        document.addEventListener('DOMContentLoaded', App.init);
+        // Initialize Feather icons
+        feather.replace();
+        // Initialize the application
+        App.init();
     </script>
 </body>
 </html>
