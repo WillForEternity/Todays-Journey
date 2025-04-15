@@ -305,7 +305,23 @@ const createThemeOption = (theme, label, bgColor, textColor, accentColor) => {
     return option;
 };
 
-// Main export function
+// Helper function to add page numbers
+const addPageNumber = (pdf, pageNum, theme) => {
+    pdf.setFont('helvetica');
+    pdf.setFontSize(9);
+    
+    // Use appropriate text color based on theme
+    if (theme.text === '#ffffff' || theme.text === 'white') {
+        pdf.setTextColor(255, 255, 255);
+    } else {
+        pdf.setTextColor(0, 0, 0);
+    }
+    
+    // Add page number at the bottom center
+    pdf.text(`Page ${pageNum}`, 105, 290, { align: 'center' });
+};
+
+// Main export function with improved pagination
 PDFExport.exportCurrentNote = async (mode = 'dark') => {
     // Check if required libraries are loaded
     if (typeof jspdf === 'undefined' || typeof html2canvas === 'undefined') {
@@ -335,263 +351,335 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
         // Get theme colors based on mode
         const theme = getThemeColors(mode);
         
-        // Create a temporary container for rendering the preview
-        const container = document.createElement('div');
-        container.className = 'pdf-preview-container';
-        container.style.backgroundColor = theme.background;
-        container.style.padding = '30mm 25mm'; // Standard document margins
-        container.style.boxSizing = 'border-box';
-        container.style.position = 'fixed';
-        container.style.zIndex = '-9999'; // Hide from view
-        container.style.top = '-9999px';
-        container.style.left = '-9999px';
-        container.style.width = '210mm'; // A4 width
-        container.style.color = theme.text;
+        // Create PDF document with proper configuration
+        const pdf = new jspdf.jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4',
+            compress: true
+        });
         
-        // Create title section with professional styling
-        const titleElement = document.createElement('div');
-        titleElement.className = 'pdf-title';
-        titleElement.style.fontSize = '16pt';
-        titleElement.style.fontWeight = 'bold';
-        titleElement.style.marginBottom = '10mm'; // Reduced from 15mm
-        titleElement.style.color = theme.text;
-        titleElement.style.textAlign = 'center'; // Center-aligned title is standard in professional documents
-        titleElement.textContent = noteTitle;
-        container.appendChild(titleElement);
+        // Convert theme.background hex to RGB for jsPDF
+        let bgRGB = { r: 38, g: 38, b: 38 }; // Default
+        if (theme.background.startsWith('#')) {
+            const hex = theme.background.slice(1);
+            bgRGB = {
+                r: parseInt(hex.slice(0, 2), 16),
+                g: parseInt(hex.slice(2, 4), 16),
+                b: parseInt(hex.slice(4, 6), 16)
+            };
+        }
         
-        // Add author and date under the title
-        const dateElement = document.createElement('div');
-        dateElement.style.fontSize = '10pt';
-        dateElement.style.color = theme.secondaryText;
-        dateElement.style.textAlign = 'center';
-        dateElement.style.marginBottom = '8mm'; // Reduced from 15mm
+        // Define page dimensions and margins
+        const pageWidth = 210;  // A4 width in mm
+        const pageHeight = 297; // A4 height in mm
+        const margin = {
+            top: 30,     // Top margin in mm
+            right: 25,   // Right margin in mm
+            bottom: 30,  // Bottom margin in mm
+            left: 25     // Left margin in mm
+        };
+        
+        // Calculate content area dimensions
+        const contentWidth = pageWidth - margin.left - margin.right;
+        const contentHeight = pageHeight - margin.top - margin.bottom;
+        
+        // Parse and prepare the note content
+        const formattedContent = NotesApp.formatNoteContent(noteContent);
+        
+        // Create a DOM parser to work with the formatted content
+        const parser = new DOMParser();
+        const contentDoc = parser.parseFromString(formattedContent, 'text/html');
+        
+        // Get all the block-level elements (paragraphs, headers, etc.)
+        const elements = Array.from(contentDoc.body.children);
+        
+        // Initialize variables for pagination
+        let currentPage = 1;
+        let yPosition = margin.top;
+        
+        // Add the first page with background
+        pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        
+        // Add title
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        
+        // Set header color
+        if (theme.text === '#ffffff' || theme.text === '#fff') {
+            pdf.setTextColor(255, 255, 255);
+        } else {
+            pdf.setTextColor(0, 0, 0);
+        }
+        
+        const titleText = noteTitle;
+        pdf.text(titleText, pageWidth / 2, yPosition, { align: 'center' });
+        yPosition += 10;
+        
+        // Add author and date
         const today = new Date();
         const formattedDate = today.toLocaleDateString(undefined, { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+            year: 'numeric', month: 'long', day: 'numeric' 
         });
-        dateElement.innerHTML = `~# William Norden <span style="margin: 0 5px;">|</span> ${formattedDate}`;
-        container.appendChild(dateElement);
+        const authorDateText = `~# William Norden | ${formattedDate}`;
         
-        // Create a standard horizontal divider
-        const divider = document.createElement('hr');
-        divider.style.border = 'none';
-        divider.style.height = '1px';
-        divider.style.backgroundColor = theme.accent;
-        divider.style.margin = '0 0 10mm 0'; // Reduced from 15mm
-        divider.style.opacity = '0.5'; // Subtle divider
-        container.appendChild(divider);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
         
-        // Create content container with professional styling
-        const contentElement = document.createElement('div');
-        contentElement.className = 'note-preview';
+        // Set secondary text color
+        if (theme.secondaryText.startsWith('#')) {
+            const hex = theme.secondaryText.slice(1);
+            const r = parseInt(hex.slice(0, 2), 16);
+            const g = parseInt(hex.slice(2, 4), 16);
+            const b = parseInt(hex.slice(4, 6), 16);
+            pdf.setTextColor(r, g, b);
+        } else {
+            pdf.setTextColor(170, 170, 170); // Default if conversion fails
+        }
         
-        // Get the actual computed styles from the editor/preview
-        const noteStyles = window.getComputedStyle(noteContentInput);
-        const previewStyles = notePreview ? window.getComputedStyle(notePreview) : null;
+        pdf.text(authorDateText, pageWidth / 2, yPosition, { align: 'center' });
+        yPosition += 8;
         
-        // Use the font from the actual UI elements
-        contentElement.style.fontFamily = previewStyles ? previewStyles.fontFamily : noteStyles.fontFamily;
-        contentElement.style.fontSize = '11pt';
-        contentElement.style.lineHeight = '1.5';
-        contentElement.style.color = theme.text;
-        contentElement.style.backgroundColor = 'transparent';
-        contentElement.style.whiteSpace = 'pre-wrap';
+        // Add some space instead of divider
+        yPosition += 10;
         
-        // Format content with the same function used in the preview
-        contentElement.innerHTML = NotesApp.formatNoteContent(noteContent);
-        container.appendChild(contentElement);
+        // Set text color for main content
+        if (theme.text === '#ffffff' || theme.text === '#fff') {
+            pdf.setTextColor(255, 255, 255);
+        } else {
+            pdf.setTextColor(0, 0, 0);
+        }
         
-        // Get font family for consistent use
-        const fontFamily = contentElement.style.fontFamily || 
-                           getComputedStyle(document.body).fontFamily || 
-                           'Consolas, "Courier New", monospace';
-        
-        // Add styling for the specific theme
-        const styleElement = document.createElement('style');
-        styleElement.textContent = `
-            .pdf-preview-container {
-                background-color: ${theme.background};
-                color: ${theme.text};
-                border: none;
-                outline: none;
-                box-shadow: none;
-                font-family: ${fontFamily};
-            }
-            .pdf-preview-container .header-h1 {
-                font-size: 14pt;
-                font-weight: bold;
-                margin: 16pt 0 10pt;
-                color: ${theme.headerText};
-                border: none;
-                background: transparent;
-                padding: 0 0 3pt 0;
-                font-family: ${fontFamily};
-                border-bottom: 1px solid ${theme.headerBorder};
-            }
-            .pdf-preview-container .header-h2 {
-                font-size: 12pt;
-                font-weight: bold;
-                margin: 14pt 0 8pt;
-                color: ${theme.headerText};
-                border: none;
-                background: transparent;
-                padding: 0;
-                font-family: ${fontFamily};
-            }
-            .pdf-preview-container .code-snippet {
-                font-family: ${fontFamily};
-                color: ${theme.codeText};
-                background-color: ${theme.codeBackground};
-                padding: 1pt 3pt;
-                border-radius: 2pt;
-                border: none;
-                font-size: 10pt;
-            }
-            .pdf-preview-container p.bullet {
-                margin: 0 0 6pt;
-                font-family: ${fontFamily};
-                white-space: pre-wrap;
-                color: ${theme.text};
-                border: none;
-                background: transparent;
-                padding: 0;
+        // Process each element for content
+        for (let i = 0; i < elements.length; i++) {
+            const element = elements[i];
+            
+            // Check if we need to start a new page
+            if (yPosition > pageHeight - margin.bottom - 15) {
+                // Add page number to current page
+                addPageNumber(pdf, currentPage, theme);
+                
+                // Add a new page
+                pdf.addPage();
+                currentPage++;
+                
+                // Fill background
+                pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
+                pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+                
+                // Reset y position to top margin
+                yPosition = margin.top;
             }
             
-            /* Standard paragraph styling */
-            .pdf-preview-container p {
-                margin: 0 0 8pt 0;
-                color: ${theme.text};
-                border: none;
-                background: transparent;
-                padding: 0;
-                box-shadow: none;
-                font-family: ${fontFamily};
-                line-height: 1.5;
-            }
-            
-            /* Override */
-            .pdf-preview-container * {
-                border: none !important;
-                outline: none !important;
-                box-shadow: none !important;
-                background-color: transparent !important;
-            }
-            
-            /* Only exceptions */
-            .pdf-preview-container .code-snippet {
-                background-color: ${theme.codeBackground} !important;
-                padding: 1pt 3pt !important;
-            }
-        `;
-        container.appendChild(styleElement);
-        
-        // Add to document for rendering
-        document.body.appendChild(container);
-        
-        // Update notification
-        notification.textContent = `Capturing preview for "${noteTitle}"...`;
-        
-        // Short delay to ensure rendering
-        setTimeout(async () => {
-            try {
-                // Capture the preview with html2canvas with optimized settings for dark background
-                const canvas = await html2canvas(container, {
-                    scale: 2, // Higher resolution
-                    useCORS: true,
-                    logging: false,
-                    backgroundColor: theme.background,
-                    removeContainer: false,
-                    allowTaint: true,
-                    foreignObjectRendering: false, // More compatible rendering
-                    onclone: function(clonedDoc) {
-                        // Ensure the cloned document also has the dark background
-                        const clonedContainer = clonedDoc.querySelector('.pdf-preview-container');
-                        if (clonedContainer) {
-                            clonedContainer.style.backgroundColor = theme.background;
-                            
-                            // Apply dark background to all elements inside
-                            const elements = clonedContainer.querySelectorAll('*');
-                            elements.forEach(el => {
-                                // Only override background if it's not dark
-                                const bgColor = getComputedStyle(el).backgroundColor;
-                                if (bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent' &&
-                                    bgColor !== 'rgb(38, 38, 38)' && bgColor !== '#262626') {
-                                    el.style.backgroundColor = 'transparent';
-                                }
-                            });
-                        }
-                    }
-                });
+            // Handle different element types
+            if (element.classList.contains('header-h1')) {
+                // Handle H1 headers
+                pdf.setFontSize(14);
+                pdf.setFont('helvetica', 'bold');
                 
-                // Update notification
-                notification.textContent = `Creating PDF for "${noteTitle}"...`;
-                
-                // Convert to PDF using jsPDF
-                const { jsPDF } = jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'portrait',
-                    unit: 'mm',
-                    format: 'a4',
-                    putOnlyUsedFonts: true,
-                    compress: true
-                });
-                
-                // Set background color for all pages to dark
-                pdf.setFillColor(theme.background);
-                pdf.rect(0, 0, 210, 297, 'F'); // Fill the entire page with dark background
-                
-                // Calculate dimensions
-                const imgWidth = 210; // A4 width (mm)
-                const pageHeight = 297; // A4 height (mm)
-                const imgHeight = canvas.height * imgWidth / canvas.width;
-                
-                // Add image to PDF - with no additional padding or margins
-                const imgData = canvas.toDataURL('image/png', 1.0); // Use PNG for better transparency
-                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-                
-                // If content overflows the first page, add additional pages with dark background
-                let heightLeft = imgHeight;
-                let position = 0;
-                
-                heightLeft -= pageHeight;
-                position = -pageHeight; // Negative because we're moving upward in the canvas
-                
-                while (heightLeft >= 0) {
-                    pdf.addPage();
-                    // Fill new page with dark background
-                    pdf.setFillColor(theme.background);
-                    pdf.rect(0, 0, 210, 297, 'F');
-                    // Add content
-                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                    heightLeft -= pageHeight;
-                    position -= pageHeight;
+                // Set header color
+                if (theme.headerText.startsWith('#')) {
+                    const hex = theme.headerText.slice(1);
+                    const r = parseInt(hex.slice(0, 2), 16);
+                    const g = parseInt(hex.slice(2, 4), 16);
+                    const b = parseInt(hex.slice(4, 6), 16);
+                    pdf.setTextColor(r, g, b);
+                } else {
+                    // Default cyan for header text
+                    pdf.setTextColor(92, 207, 230);
                 }
                 
-                // Save the PDF
-                pdf.save(`${noteTitle}.pdf`);
+                pdf.text(element.textContent, margin.left, yPosition);
+                // Reduce spacing between header text and underline
+                yPosition += 3;
                 
-                // Update notification
-                notification.textContent = `PDF export complete!`;
-                setTimeout(() => {
-                    notification.style.opacity = '0';
-                    setTimeout(() => notification.remove(), 500);
-                }, 1500);
+                // Add underline for h1 headers
+                if (theme.headerText.startsWith('#')) {
+                    const hex = theme.headerText.slice(1);
+                    const r = parseInt(hex.slice(0, 2), 16);
+                    const g = parseInt(hex.slice(2, 4), 16);
+                    const b = parseInt(hex.slice(4, 6), 16);
+                    pdf.setDrawColor(r, g, b, 0.5);
+                } else {
+                    pdf.setDrawColor(92, 207, 230, 0.5);
+                }
+                pdf.setLineWidth(0.2);
+                pdf.line(margin.left, yPosition, margin.left + 40, yPosition);
+                // Same spacing after underline
+                yPosition += 3;
                 
-                // Clean up
-                document.body.removeChild(container);
+            } else if (element.classList.contains('header-h2')) {
+                // Handle H2 headers
+                pdf.setFontSize(12);
+                pdf.setFont('helvetica', 'bold');
                 
-            } catch (error) {
-                console.error("Error capturing preview:", error);
-                alert("Error creating PDF. Please try again.");
-                document.body.removeChild(container);
+                // Set header color
+                if (theme.headerText.startsWith('#')) {
+                    const hex = theme.headerText.slice(1);
+                    const r = parseInt(hex.slice(0, 2), 16);
+                    const g = parseInt(hex.slice(2, 4), 16);
+                    const b = parseInt(hex.slice(4, 6), 16);
+                    pdf.setTextColor(r, g, b);
+                } else {
+                    // Default cyan for header text
+                    pdf.setTextColor(92, 207, 230);
+                }
+                
+                pdf.text(element.textContent, margin.left, yPosition);
+                yPosition += 7;
+                
+            } else if (element.classList.contains('code-snippet')) {
+                // Handle code snippets
+                pdf.setFontSize(10);
+                pdf.setFont('courier', 'normal');
+                
+                // Set code color
+                if (theme.codeText.startsWith('#')) {
+                    const hex = theme.codeText.slice(1);
+                    const r = parseInt(hex.slice(0, 2), 16);
+                    const g = parseInt(hex.slice(2, 4), 16);
+                    const b = parseInt(hex.slice(4, 6), 16);
+                    pdf.setTextColor(r, g, b);
+                } else {
+                    // Default cyan for code
+                    pdf.setTextColor(92, 207, 230);
+                }
+                
+                // Add subtle background for code
+                pdf.setFillColor(92, 207, 230, 0.1);
+                const codeTextHeight = 6;
+                pdf.roundedRect(margin.left - 2, yPosition - 5, contentWidth + 4, codeTextHeight + 6, 1, 1, 'F');
+                
+                pdf.text(element.textContent, margin.left, yPosition);
+                yPosition += 10;
+                
+            } else if (element.classList.contains('bullet')) {
+                // Handle bullet points
+                pdf.setFontSize(11);
+                pdf.setFont('helvetica', 'normal');
+                
+                // Set text color
+                if (theme.text === '#ffffff' || theme.text === '#fff') {
+                    pdf.setTextColor(255, 255, 255);
+                } else {
+                    pdf.setTextColor(0, 0, 0);
+                }
+                
+                // Calculate indentation
+                const text = element.textContent;
+                const indentMatch = text.match(/^(\s*)/);
+                const indentLevel = indentMatch ? indentMatch[0].length / 2 : 0;
+                const indentSize = 5; // mm per indent level
+                
+                // Add text only (no bullet dot)
+                pdf.text(text.trim(), margin.left + (indentLevel * indentSize), yPosition);
+                yPosition += 6;
+                
+            } else {
+                // Handle regular paragraphs
+                pdf.setFontSize(11);
+                pdf.setFont('helvetica', 'normal');
+                
+                // Set text color
+                if (theme.text === '#ffffff' || theme.text === '#fff') {
+                    pdf.setTextColor(255, 255, 255);
+                } else {
+                    pdf.setTextColor(0, 0, 0);
+                }
+                
+                // Handle potential text wrapping by breaking it into lines
+                const text = element.textContent;
+                const textWidth = pdf.getTextWidth(text);
+                
+                if (textWidth <= contentWidth) {
+                    // Short enough to fit on one line
+                    pdf.text(text, margin.left, yPosition);
+                    yPosition += 6;
+                } else {
+                    // Need to wrap text
+                    const words = text.split(' ');
+                    let currentLine = '';
+                    
+                    for (let j = 0; j < words.length; j++) {
+                        const word = words[j];
+                        const testLine = currentLine + (currentLine ? ' ' : '') + word;
+                        const testWidth = pdf.getTextWidth(testLine);
+                        
+                        if (testWidth > contentWidth) {
+                            // Check if we need a new page
+                            if (yPosition > pageHeight - margin.bottom - 15) {
+                                // Add page number to current page
+                                addPageNumber(pdf, currentPage, theme);
+                                
+                                // Add a new page
+                                pdf.addPage();
+                                currentPage++;
+                                
+                                // Fill background
+                                pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
+                                pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+                                
+                                // Reset y position to top margin
+                                yPosition = margin.top;
+                            }
+                            
+                            pdf.text(currentLine, margin.left, yPosition);
+                            yPosition += 6;
+                            currentLine = word;
+                        } else {
+                            currentLine = testLine;
+                        }
+                    }
+                    
+                    // Add the last line if any
+                    if (currentLine) {
+                        pdf.text(currentLine, margin.left, yPosition);
+                        yPosition += 6;
+                    }
+                }
             }
-        }, 300); // Give time for rendering
+            
+            // Add a bit of space after each element
+            yPosition += 2;
+        }
         
+        // Add page number to the last page
+        addPageNumber(pdf, currentPage, theme);
+        
+        // Generate PDF and trigger download
+        const pdfBlob = pdf.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        const safeFilename = noteTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        link.download = `${safeFilename}.pdf`;
+        link.click();
+        
+        // Show success notification
+        notification.textContent = `PDF exported successfully!`;
+        notification.classList.add('success');
+        
+        // Clean up after delay
+        setTimeout(() => {
+            document.body.removeChild(notification);
+            URL.revokeObjectURL(pdfUrl); // Clean up the blob URL
+        }, 3000);
+    
     } catch (error) {
-        console.error("Error in PDF export:", error);
-        alert("An error occurred during PDF export. Please try again.");
+        console.error('Error generating PDF:', error);
+        const notification = document.createElement('div');
+        notification.className = 'pdf-export-notification error';
+        notification.textContent = `Error exporting PDF: ${error.message}`;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 5000);
     }
 };
 
