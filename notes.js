@@ -390,7 +390,7 @@ NotesApp.renderNoteList = () => {
 
             const notesInFolder = NotesApp.state.notes[selectedFolderId] || [];
             // Ensure notes are sorted by most recently updated
-            notesInFolder.sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
+            notesInFolder.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
             if (notesInFolder.length === 0) {
                 notesInFolderEmptyState.style.display = 'flex'; // Show "No notes in this folder"
@@ -1074,6 +1074,135 @@ NotesApp.handleNoteInputChange = () => {
     }
 };
 
+/**
+ * Handles key events in the note content area for special formatting
+ * - Supports creating and continuing bullet points with "- "
+ * - Supports indentation with Tab key (indents entire bullet by 6 spaces)
+ * - Auto-continues bullets on Enter key
+ */
+NotesApp.handleNoteContentKeyDown = (e) => {
+    const editor = e.target;
+    
+    // Handle the tab key for indentation (without losing focus)
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        
+        // Get selection positions
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        
+        // Get the current line start position
+        const lineStart = editor.value.lastIndexOf('\n', start - 1) + 1;
+        const lineEnd = editor.value.indexOf('\n', start);
+        const currentLine = editor.value.substring(
+            lineStart, 
+            lineEnd === -1 ? editor.value.length : lineEnd
+        );
+        
+        const beforeLine = editor.value.substring(0, lineStart);
+        const afterLine = editor.value.substring(lineStart);
+        
+        // Check if we're on a bullet point line
+        const bulletMatch = currentLine.match(/^(\s*)-(  .*)$/);
+        if (bulletMatch) {
+            // For bullet points, add 6 spaces to the entire line
+            // This indents the whole bullet (dash included)
+            editor.value = beforeLine + "      " + afterLine;
+            editor.selectionStart = start + 6;
+            editor.selectionEnd = end + 6;
+        } else {
+            // For non-bullet lines, add 6 spaces of indentation
+            editor.value = beforeLine + "      " + afterLine;
+            editor.selectionStart = start + 6;
+            editor.selectionEnd = end + 6;
+        }
+        
+        // Trigger the input event to notify of changes
+        editor.dispatchEvent(new Event('input'));
+    }
+    
+    // Handle enter key for bullet point continuation
+    else if (e.key === 'Enter') {
+        // Get the current line
+        const start = editor.selectionStart;
+        const lineStart = editor.value.lastIndexOf('\n', start - 1) + 1;
+        const lineContent = editor.value.substring(lineStart, start);
+        
+        // Check if the current line is a bullet point
+        // Look for any number of spaces, then "- " followed by content
+        const bulletMatch = lineContent.match(/^(\s*)-(\s+)(.*)$/);
+        if (bulletMatch) {
+            e.preventDefault();
+            
+            const indentation = bulletMatch[1]; // Capture the spaces before the dash
+            const spaceAfterDash = bulletMatch[2]; // Spaces after the dash
+            const bulletContent = bulletMatch[3].trim(); // Content after the spaces
+            
+            // If the bullet content is empty, remove the bullet (but keep indentation)
+            if (!bulletContent) {
+                // Remove the "- " part but maintain the line break and indentation
+                const beforeLine = editor.value.substring(0, lineStart);
+                const afterLine = editor.value.substring(start);
+                editor.value = beforeLine + indentation + afterLine;
+                editor.selectionStart = lineStart + indentation.length;
+                editor.selectionEnd = lineStart + indentation.length;
+            } else {
+                // Add a new bullet point with the same indentation level
+                const before = editor.value.substring(0, start);
+                const after = editor.value.substring(start);
+                const newBullet = '\n' + indentation + '-' + spaceAfterDash;
+                
+                editor.value = before + newBullet + after;
+                
+                // Position cursor after the new bullet
+                const newPosition = start + newBullet.length;
+                editor.selectionStart = newPosition;
+                editor.selectionEnd = newPosition;
+            }
+            
+            // Trigger the input event to notify of changes
+            editor.dispatchEvent(new Event('input'));
+        }
+    }
+};
+
+/**
+ * Formats bullet points as the user types
+ * - Auto-indents by 6 spaces when "- " is typed
+ * - Adds 2 spaces after the dash
+ * - Preserves cursor position after formatting
+ */
+NotesApp.handleNoteContentInput = (e) => {
+    const editor = e.target;
+    const text = editor.value;
+    const cursorPos = editor.selectionStart;
+    
+    // Check if we just typed "- " at the start of a line (without any indentation)
+    const lineStart = text.lastIndexOf('\n', cursorPos - 1) + 1;
+    const currentLineToPos = text.substring(lineStart, cursorPos);
+    
+    // Check if we just typed "- " at the beginning of a line with no indentation
+    if (currentLineToPos === "- ") {
+        // Add 6 spaces of indentation before the dash and 2 spaces after
+        const beforeLine = text.substring(0, lineStart);
+        const afterDash = text.substring(lineStart);
+        
+        // Format with 6 spaces before dash and add an extra space after
+        const formattedLine = beforeLine + "      " + afterDash + " ";
+        
+        // Calculate new cursor position (after the spaces following the dash)
+        const newCursorPos = cursorPos + 7; // 6 spaces added before, 1 space added after
+        
+        // Update text and cursor position
+        editor.value = formattedLine;
+        editor.selectionStart = newCursorPos;
+        editor.selectionEnd = newCursorPos;
+    }
+    
+    // Call the original input handler for save detection
+    NotesApp.handleNoteInputChange(e);
+};
+
 // --- Utility ---
 /** Basic HTML escaping function */
 NotesApp.escapeHtml = (unsafe) => {
@@ -1102,6 +1231,8 @@ NotesApp.setupEventListeners = () => {
 
     noteTitleInput?.addEventListener('input', NotesApp.handleNoteInputChange);
     noteContentInput?.addEventListener('input', NotesApp.handleNoteInputChange);
+    noteContentInput?.addEventListener('keydown', NotesApp.handleNoteContentKeyDown);
+    noteContentInput?.addEventListener('input', NotesApp.handleNoteContentInput);
 
     // Folder Input Listeners
     confirmAddFolderBtn?.addEventListener('click', NotesApp.confirmAddFolder);
