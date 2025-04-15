@@ -112,8 +112,10 @@
                 <div id="noteEditor" style="display: none;">
                     <input type="text" id="noteTitleInput" placeholder="Note Title">
                     <textarea id="noteContentInput" placeholder="Start writing your note..."></textarea>
+                    <div id="notePreview" class="note-preview" style="display: none;"></div>
                     <div class="note-editor-actions">
                          <span id="noteStatus"></span>
+                         <button id="togglePreviewBtn" class="action-button" title="Toggle Preview Mode"><i data-feather="eye"></i> Preview</button>
                          <button id="saveNoteBtn" class="action-button" title="Save Note (Ctrl+S)"><i data-feather="save"></i> Save</button>
                          <button id="deleteNoteBtn" class="action-button" title="Delete Note"><i data-feather="trash-2"></i> Delete</button>
                     </div>

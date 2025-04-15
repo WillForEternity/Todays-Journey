@@ -918,6 +918,75 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
     color: #fff;
 }
 
+/* Note Preview Mode */
+.note-preview {
+    flex-grow: 1;
+    min-height: 100px;
+    padding: 15px;
+    border: 1px solid var(--hover-bg-color);
+    background-color: var(--input-bg-color);
+    color: var(--text-color);
+    border-radius: var(--border-radius);
+    font-family: var(--font-family);
+    font-size: 1em;
+    line-height: 1.6;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Header formatting for Markdown-style headers */
+.note-preview .header-h1 {
+    font-size: 1.3em;
+    font-weight: bold;
+    margin: 10px 0 6px;
+    color: var(--accent-color);
+    border-bottom: 1px solid var(--hover-bg-color);
+    padding-bottom: 3px;
+}
+
+.note-preview .header-h2 {
+    font-size: 1.15em;
+    font-weight: bold;
+    margin: 8px 0 4px;
+    color: var(--accent-color);
+}
+
+/* Code formatting */
+.code-snippet {
+    color: #5ccfe6; /* Subtle cyan color */
+    font-family: monospace;
+    background-color: rgba(92, 207, 230, 0.1); /* Very subtle background */
+    padding: 0 4px;
+    border-radius: 3px;
+    display: inline;
+}
+
+/* Bullet point formatting */
+.note-preview p.bullet {
+    margin-bottom: 4px;
+    position: relative;
+}
+
+.note-preview p.bullet.indented {
+    border-left: 2px solid var(--hover-bg-color);
+    margin-left: 6px;
+}
+
+/* Indented content for bullets in preview */
+.note-preview p {
+    margin: 0 0 8px 0;
+}
+
+.note-preview p.indented {
+    padding-left: 6px;
+    border-left: 2px solid var(--hover-bg-color);
+}
+
+/* Ensure empty lines have height */
+.note-preview p:empty, .note-preview p:blank {
+    min-height: 1em;
+}
 
 /* --- ======================== --- */
 /* --- Responsive adjustments --- */

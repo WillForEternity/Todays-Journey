@@ -28,6 +28,8 @@ NotesApp.dom = {
     newFolderNameInput: document.getElementById('newFolderNameInput'),
     confirmAddFolderBtn: document.getElementById('confirmAddFolderBtn'),
     cancelAddFolderBtn: document.getElementById('cancelAddFolderBtn'),
+    notePreview: document.getElementById('notePreview'),
+    togglePreviewBtn: document.getElementById('togglePreviewBtn')
 };
 
 // --- Notes State ---
@@ -1075,10 +1077,103 @@ NotesApp.handleNoteInputChange = () => {
 };
 
 /**
+ * Handles toggling between edit and preview modes
+ */
+NotesApp.togglePreviewMode = () => {
+    const { noteContentInput, notePreview } = NotesApp.dom;
+    
+    if (!noteContentInput || !notePreview) return;
+    
+    const isPreviewVisible = notePreview.style.display !== 'none';
+    
+    if (isPreviewVisible) {
+        // Switch back to edit mode
+        notePreview.style.display = 'none';
+        noteContentInput.style.display = '';
+        
+        // Update icon and text
+        const previewBtn = document.getElementById('togglePreviewBtn');
+        if (previewBtn) {
+            previewBtn.innerHTML = '<i data-feather="eye"></i> Preview';
+            App.refreshIcons();
+        }
+    } else {
+        // Switch to preview mode
+        notePreview.style.display = '';
+        noteContentInput.style.display = 'none';
+        
+        // Format the content with code highlighting
+        notePreview.innerHTML = NotesApp.formatNoteContent(noteContentInput.value);
+        
+        // Update icon and text
+        const previewBtn = document.getElementById('togglePreviewBtn');
+        if (previewBtn) {
+            previewBtn.innerHTML = '<i data-feather="edit"></i> Edit';
+            App.refreshIcons();
+        }
+    }
+};
+
+/**
+ * Formats the note content for preview mode
+ * - Converts backtick-enclosed text to cyan code snippets
+ * - Converts hashtag headers to appropriate heading sizes
+ * - Formats bullet points with proper indentation
+ * - Maintains line breaks
+ */
+NotesApp.formatNoteContent = (content) => {
+    if (!content) return '';
+    
+    // Step 1: Escape HTML special characters
+    let formatted = NotesApp.escapeHtml(content);
+    
+    // Step 2: Split into lines to process headers and other line-based formatting
+    let lines = formatted.split('\n');
+    
+    // Process each line
+    lines = lines.map(line => {
+        // Process headers (# and ##)
+        if (line.match(/^#\s+.+/)) {
+            // Level 1 header: # Header text
+            return `<div class="header-h1">${line.replace(/^#\s+/, '')}</div>`;
+        } else if (line.match(/^##\s+.+/)) {
+            // Level 2 header: ## Header text
+            return `<div class="header-h2">${line.replace(/^##\s+/, '')}</div>`;
+        } else {
+            // Process bullet points
+            const bulletMatch = line.match(/^(\s*)-(\s+)(.*)$/);
+            if (bulletMatch) {
+                const indentation = bulletMatch[1]; // Spaces before dash
+                const bulletContent = bulletMatch[3]; // Content after dash and spaces
+                
+                // Calculate indentation level (6 spaces = 1 level)
+                const indentLevel = Math.floor(indentation.length / 6);
+                const indentClass = indentLevel > 0 ? ' indented' : '';
+                
+                // Add bullet point with proper indentation
+                return `<p class="bullet${indentClass}" style="padding-left: ${indentLevel * 20}px">• ${bulletContent}</p>`;
+            } else {
+                // Regular text
+                return line ? `<p>${line}</p>` : '<p>&nbsp;</p>';
+            }
+        }
+    });
+    
+    // Join lines back together
+    formatted = lines.join('');
+    
+    // Step 3: Process code snippets (text between backticks)
+    formatted = formatted.replace(/`([^`]+)`/g, '<span class="code-snippet">$1</span>');
+    
+    return formatted;
+};
+
+/**
  * Handles key events in the note content area for special formatting
  * - Supports creating and continuing bullet points with "- "
  * - Supports indentation with Tab key (indents entire bullet by 6 spaces)
  * - Auto-continues bullets on Enter key
+ * - Monitors backtick pairs for code formatting
  */
 NotesApp.handleNoteContentKeyDown = (e) => {
     const editor = e.target;
@@ -1167,10 +1262,11 @@ NotesApp.handleNoteContentKeyDown = (e) => {
 };
 
 /**
- * Formats bullet points as the user types
- * - Auto-indents by 6 spaces when "- " is typed
- * - Adds 2 spaces after the dash
- * - Preserves cursor position after formatting
+ * Handles key events in the note content area for special formatting
+ * - Supports creating and continuing bullet points with "- "
+ * - Supports indentation with Tab key (indents entire bullet by 6 spaces)
+ * - Auto-continues bullets on Enter key
+ * - Monitors backtick pairs for code formatting
  */
 NotesApp.handleNoteContentInput = (e) => {
     const editor = e.target;
@@ -1221,7 +1317,8 @@ NotesApp.setupEventListeners = () => {
     const {
         addRootFolderBtn, addNoteBtn, saveNoteBtn, deleteNoteBtn,
         noteTitleInput, noteContentInput,
-        confirmAddFolderBtn, cancelAddFolderBtn, newFolderNameInput
+        confirmAddFolderBtn, cancelAddFolderBtn, newFolderNameInput,
+        togglePreviewBtn
     } = NotesApp.dom;
 
     addRootFolderBtn?.addEventListener('click', () => NotesApp.showAddFolderInput(null));
@@ -1231,46 +1328,54 @@ NotesApp.setupEventListeners = () => {
 
     noteTitleInput?.addEventListener('input', NotesApp.handleNoteInputChange);
     noteContentInput?.addEventListener('input', NotesApp.handleNoteInputChange);
+    
+    // Add the code formatting and bullet point event listeners
     noteContentInput?.addEventListener('keydown', NotesApp.handleNoteContentKeyDown);
     noteContentInput?.addEventListener('input', NotesApp.handleNoteContentInput);
+    
+    // Add preview toggle functionality
+    togglePreviewBtn?.addEventListener('click', NotesApp.togglePreviewMode);
+    
+    // Make sure we have the preview DOM references
+    if (!NotesApp.dom.notePreview) {
+        NotesApp.dom.notePreview = document.getElementById('notePreview');
+    }
+    if (!NotesApp.dom.togglePreviewBtn) {
+        NotesApp.dom.togglePreviewBtn = document.getElementById('togglePreviewBtn');
+    }
 
-    // Folder Input Listeners
     confirmAddFolderBtn?.addEventListener('click', NotesApp.confirmAddFolder);
     cancelAddFolderBtn?.addEventListener('click', () => NotesApp.hideAddFolderInput(true));
-    newFolderNameInput?.addEventListener('keypress', (e) => {
+    newFolderNameInput?.addEventListener('keyup', (e) => {
         if (e.key === 'Enter') {
-            e.preventDefault();
             NotesApp.confirmAddFolder();
+        } else if (e.key === 'Escape') {
+            NotesApp.hideAddFolderInput(true);
         }
     });
-    // Escape key handled globally in App.init
 
-     // Save Note Shortcut
-     document.addEventListener('keydown', (event) => {
-        if (App.state.currentView !== 'notes') return; // Only active in notes view
-
-        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
-            // Check if focus is NOT on an input other than the note editor inputs
-             const isEditorInputFocused = document.activeElement === noteTitleInput || document.activeElement === noteContentInput;
-             const isOtherInputFocused = document.activeElement?.tagName === 'INPUT' && !isEditorInputFocused || document.activeElement?.tagName === 'TEXTAREA' && !isEditorInputFocused;
-
-            if (!isOtherInputFocused) {
-                event.preventDefault();
-                if (saveNoteBtn && !saveNoteBtn.disabled) {
-                    console.log("Save shortcut triggered.");
+    // Global Keyboard Shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Ctrl+S / Cmd+S for save
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault(); // Prevent browser save dialog
+            
+            // Only save if there are unsaved changes and focus is in the note editor
+            const isEditorInputFocused = document.activeElement === noteTitleInput || document.activeElement === noteContentInput;
+            if (isEditorInputFocused && NotesApp.state.selectedNoteId !== null) {
+                if (!saveNoteBtn.disabled) {
                     NotesApp.handleSaveNote();
                 } else {
-                     console.log("Save shortcut ignored, no unsaved changes or button disabled.");
+                    console.log("Save shortcut ignored, no unsaved changes or button disabled.");
                 }
             } else {
-                 console.log("Save shortcut ignored (focus on other input like folder name).");
+                console.log("Save shortcut ignored (focus on other input like folder name).");
             }
         }
     });
     // Folder/note list item clicks handled dynamically in creation functions
     // Parent button click handled dynamically in renderNoteList
 };
-
 
 // --- Notes Initialization ---
 NotesApp.init = async () => {
