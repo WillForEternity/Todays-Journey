@@ -962,6 +962,37 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
     display: inline;
 }
 
+/* Code block formatting - for triple backtick code blocks */
+.code-block {
+    font-family: 'Courier New', Courier, monospace;
+    background-color: rgba(40, 44, 52, 0.8); /* Dark background */
+    border-radius: 5px;
+    margin: 10px 0;
+    padding: 10px;
+    overflow-x: auto;
+    border-left: 3px solid #5ccfe6; /* Cyan accent border */
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.code-block pre {
+    margin: 0;
+    white-space: pre;
+    overflow-x: auto;
+    color: #e6e6e6; /* Light text color for contrast */
+}
+
+/* Slight language-specific styling can be added when desired */
+.code-block.javascript pre { color: #f8f8f2; }
+.code-block.python pre { color: #f8f8f2; }
+.code-block.html pre { color: #f8f8f2; }
+.code-block.css pre { color: #f8f8f2; }
+
+/* Ensure code blocks don't overflow in preview and pdf export */
+.note-preview .code-block {
+    max-width: 100%;
+}
+
 /* Bullet point formatting */
 .note-preview p.bullet {
     margin-bottom: 0;

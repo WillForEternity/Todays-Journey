@@ -1120,6 +1120,7 @@ NotesApp.togglePreviewMode = () => {
  * - Converts hashtag headers to appropriate heading sizes
  * - Formats bullet points with proper indentation
  * - Maintains line breaks
+ * - Handles triple backtick code blocks with syntax highlighting
  */
 NotesApp.formatNoteContent = (content) => {
     if (!content) return '';
@@ -1127,40 +1128,84 @@ NotesApp.formatNoteContent = (content) => {
     // Step 1: Escape HTML special characters
     let formatted = NotesApp.escapeHtml(content);
     
-    // Step 2: Split into lines to process headers and other line-based formatting
+    // Step 2: Process triple backtick code blocks first (before processing other formatting)
+    // This regex matches content between triple backticks, with optional language specification
+    const codeBlockRegex = /```([a-zA-Z]*)?\n([\s\S]*?)```/g;
+    formatted = formatted.replace(codeBlockRegex, (match, language, codeContent) => {
+        // Clean up the language specification (if any)
+        const lang = language ? language.trim() : '';
+        
+        // Preserve line breaks and indentation within code blocks
+        const formattedCode = codeContent
+            .split('\n')
+            .map(line => {
+                // Preserve spaces for indentation (replace them with &nbsp;)
+                const indentedLine = line.replace(/^(\s+)/, (match, spaces) => {
+                    return '&nbsp;'.repeat(spaces.length);
+                });
+                return indentedLine;
+            })
+            .join('<br>');
+        
+        // Return the formatted code block
+        return `<div class="code-block${lang ? ' ' + lang : ''}"><pre>${formattedCode}</pre></div>`;
+    });
+    
+    // Step 3: Split into lines to process headers and other line-based formatting
+    // Split by newlines, but only for content outside of code blocks (already processed)
     let lines = formatted.split('\n');
     
     // Process each line
     lines = lines.map(line => {
-        // Process headers (# and ##)
-        if (line.match(/^#\s+.+/)) {
-            // Level 1 header: # Header text
-            return `<div class="header-h1">${line.replace(/^#\s+/, '')}</div>`;
-        } else if (line.match(/^##\s+.+/)) {
-            // Level 2 header: ## Header text
-            return `<div class="header-h2">${line.replace(/^##\s+/, '')}</div>`;
-        } else {
-            // Process bullet points - maintain original dash and spacing
-            const bulletMatch = line.match(/^(\s*)-(\s+)(.*)$/);
-            if (bulletMatch) {
-                const indentation = bulletMatch[1]; // Spaces before dash
-                const spacesAfterDash = bulletMatch[2]; // Spaces after dash
-                const bulletContent = bulletMatch[3]; // Content after dash and spaces
-                
-                // Preserve the exact spacing and dash style
-                return `<p class="bullet">${indentation}-${spacesAfterDash}${bulletContent}</p>`;
-            } else {
-                // Regular text
-                return line ? `<p>${line}</p>` : '<p>&nbsp;</p>';
+        // Skip processing if this line is part of a code block (already processed)
+        if (line.includes('<div class="code-block') || line.includes('<pre>') || line.includes('</pre>') || line.includes('</div>')) {
+            return line;
+        }
+        
+        // Header processing (lines starting with # to #####)
+        if (line.startsWith('#')) {
+            const headerMatch = line.match(/^(#{1,5})\s+(.+)$/);
+            if (headerMatch) {
+                const level = headerMatch[1].length; // Number of # symbols
+                const headerContent = headerMatch[2];
+                return `<h${level}>${headerContent}</h${level}>`;
             }
+        }
+        
+        // Bullet point processing (lines starting with - or indented with spaces and -)
+        const bulletMatch = line.match(/^(\s*)-(\s+)(.+)$/);
+        if (bulletMatch) {
+            const indentation = bulletMatch[1]; // Spaces before dash
+            const spacesAfterDash = bulletMatch[2]; // Spaces after dash
+            const bulletContent = bulletMatch[3]; // Content after dash and spaces
+            
+            // Preserve the exact spacing and dash style
+            return `<p class="bullet">${indentation}-${spacesAfterDash}${bulletContent}</p>`;
+        } else {
+            // Regular text
+            return line ? `<p>${line}</p>` : '<p>&nbsp;</p>';
         }
     });
     
     // Join lines back together
     formatted = lines.join('');
     
-    // Step 3: Process code snippets (text between backticks)
-    formatted = formatted.replace(/`([^`]+)`/g, '<span class="code-snippet">$1</span>');
+    // Step 4: Process inline code snippets (text between single backticks)
+    // But don't process backticks inside code blocks that have already been processed
+    formatted = formatted.replace(/`([^`]+)`/g, (match, codeContent, offset) => {
+        // Ensure we're not inside an already processed code block
+        const beforeMatch = formatted.substring(0, offset);
+        const codeBlockOpenCount = (beforeMatch.match(/<div class="code-block/g) || []).length;
+        const codeBlockCloseCount = (beforeMatch.match(/<\/div>/g) || []).length;
+        
+        // If we're inside a code block, return the original match
+        if (codeBlockOpenCount > codeBlockCloseCount) {
+            return match;
+        }
+        
+        // Otherwise, apply formatting for inline code
+        return `<span class="code-snippet">${codeContent}</span>`;
+    });
     
     return formatted;
 };
@@ -1214,7 +1259,7 @@ NotesApp.handleNoteContentKeyDown = (e) => {
         // Regular Tab (already handled)
         else {
             // Check if we're on a bullet point line
-            const bulletMatch = currentLine.match(/^(\s*)-(  .*)$/);
+            const bulletMatch = currentLine.match(/^(\s*)-(\s+)(.*)$/);
             if (bulletMatch) {
                 // For bullet points, add 6 spaces to the entire line
                 // This indents the whole bullet (dash included)

@@ -373,29 +373,53 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
             };
         }
         
-        // Define page dimensions and margins
+        // Define text color RGB
+        let textRGB = { r: 255, g: 255, b: 255 }; // Default white
+        if (theme.text === '#000000' || theme.text === '#000') {
+            textRGB = { r: 0, g: 0, b: 0 };
+        }
+        
+        // Define page dimensions and initial margins
         const pageWidth = 210;  // A4 width in mm
         const pageHeight = 297; // A4 height in mm
-        const margin = {
-            top: 30,     // Top margin in mm
-            right: 25,   // Right margin in mm
-            bottom: 30,  // Bottom margin in mm
-            left: 25     // Left margin in mm
+        const firstPageMargin = {
+            top: 25,     // Top margin in mm for first page (allows room for title)
+            right: 20,   // Right margin in mm
+            bottom: 0,  // Bottom margin in mm
+            left: 20     // Left margin in mm
         };
         
-        // Calculate content area dimensions
-        const contentWidth = pageWidth - margin.left - margin.right;
-        const contentHeight = pageHeight - margin.top - margin.bottom;
+        // Make subsequent pages have equal top and bottom margins
+        const standardMargin = {
+            top: 25,     // Top margin in mm
+            right: 20,   // Right margin in mm
+            bottom: 25,  // Bottom margin in mm
+            left: 20     // Left margin in mm
+        };
         
-        // Parse and prepare the note content
-        const formattedContent = NotesApp.formatNoteContent(processedContent);
+        // Start with first page margins
+        let margin = { ...firstPageMargin };
         
-        // Create a DOM parser to work with the formatted content
-        const parser = new DOMParser();
-        const contentDoc = parser.parseFromString(formattedContent, 'text/html');
+        // Calculate content area dimensions (will be updated when adding new pages)
+        let contentWidth = pageWidth - margin.left - margin.right;
+        let contentHeight = pageHeight - margin.top - margin.bottom;
         
-        // Get all the block-level elements (paragraphs, headers, etc.)
-        const elements = Array.from(contentDoc.body.children);
+        // Define safe areas - don't start new elements too close to bottom of page
+        let safeBottom = pageHeight - margin.bottom - 30; // Reduced from 50 to 30mm
+        
+        // Create a temporary hidden div to render formatted content
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.width = '210mm'; // A4 width
+        tempDiv.className = 'note-preview';
+        
+        // Apply the formatted content
+        tempDiv.innerHTML = NotesApp.formatNoteContent(processedContent);
+        document.body.appendChild(tempDiv);
+        
+        // Now extract elements with proper rendering
+        const elements = Array.from(tempDiv.children);
         
         // Initialize variables for pagination
         let currentPage = 1;
@@ -458,8 +482,12 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
         for (let i = 0; i < elements.length; i++) {
             const element = elements[i];
             
-            // Check if we need to start a new page
-            if (yPosition > pageHeight - margin.bottom - 15) {
+            // First check if this is a large element (code block or image) that needs special handling
+            let isLargeElement = false;
+            let elementHeight = 0;
+            
+            // Now regular check if we need to start a new page
+            if (yPosition > safeBottom) {
                 // Add page number to current page
                 addPageNumber(pdf, currentPage, theme);
                 
@@ -471,14 +499,20 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
                 pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
                 pdf.rect(0, 0, pageWidth, pageHeight, 'F');
                 
-                // Reset y position to top margin
-                yPosition = margin.top;
+                // Reset y position to top margin and use standard margins for all subsequent pages
+                yPosition = standardMargin.top;
+                margin = { ...standardMargin }; // Update the margin reference for subsequent content
+                
+                // Update content area dimensions and safe bottom for new page
+                contentWidth = pageWidth - margin.left - margin.right;
+                contentHeight = pageHeight - margin.top - margin.bottom;
+                safeBottom = pageHeight - margin.bottom - 30; // Reduced from 50 to 30mm
             }
             
             // Handle different element types
-            if (element.classList.contains('header-h1')) {
+            if (element.tagName === 'H1' || element.classList.contains('header-h1')) {
                 // Handle H1 headers
-                pdf.setFontSize(16); // Increased from 14
+                pdf.setFontSize(16);
                 pdf.setFont('helvetica', 'bold');
                 
                 // Set header color
@@ -512,7 +546,7 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
                 // Same spacing after underline
                 yPosition += 3;
                 
-            } else if (element.classList.contains('header-h2')) {
+            } else if (element.tagName === 'H2' || element.classList.contains('header-h2')) {
                 // Handle H2 headers
                 pdf.setFontSize(12);
                 pdf.setFont('helvetica', 'bold');
@@ -532,6 +566,249 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
                 pdf.text(element.textContent, margin.left, yPosition);
                 yPosition += 7;
                 
+            } else if (element.classList.contains('code-block') || (element.tagName === 'DIV' && element.querySelector('pre'))) {
+                // Simplified code block handling - treat more like regular text
+                pdf.setFontSize(10); // Slightly larger for better readability
+                pdf.setFont('courier', 'normal'); // Monospace font
+                
+                // Extract code content
+                let codeText;
+                if (element.querySelector('pre')) {
+                    codeText = element.querySelector('pre').innerHTML
+                        .replace(/<br>/g, '\n')
+                        .replace(/&nbsp;/g, ' ');
+                } else {
+                    codeText = element.textContent;
+                }
+                
+                // Decode HTML entities
+                const decodeDiv = document.createElement('div');
+                decodeDiv.innerHTML = codeText;
+                codeText = decodeDiv.textContent || decodeDiv.innerText || '';
+                
+                // Always move code blocks to a new page if less than 60mm from bottom
+                if (yPosition > pageHeight - margin.bottom - 60) { // Reserve space for images
+                    // Add page number to current page
+                    addPageNumber(pdf, currentPage, theme);
+                    
+                    // Add a new page
+                    pdf.addPage();
+                    currentPage++;
+                    
+                    // Fill background
+                    pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
+                    pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+                    
+                    // Reset y position to top margin
+                    yPosition = standardMargin.top;
+                }
+                
+                // Add some space before code block
+                yPosition += 4;
+                
+                // Set code block colors based on theme
+                const bgColor = mode === 'dark' ? 
+                    { r: 40, g: 44, b: 52 } : // Dark mode
+                    { r: 240, g: 240, b: 245 }; // Light mode
+                
+                const codeColor = mode === 'dark' ? 
+                    { r: 230, g: 230, b: 230 } : // Light text for dark mode
+                    { r: 50, g: 50, b: 50 };     // Dark text for light mode
+                
+                // Process the code with proper text wrapping
+                const lineHeight = 5; // Slightly larger line height
+                const blockPadding = 6; // Increased padding
+                const effectiveWidth = contentWidth - (blockPadding * 2); // Available width for text
+                
+                // Split the code text into lines
+                let codeLines = codeText.split('\n');
+                let wrappedLines = [];
+                
+                // Process each line with wrapping for long lines
+                for (const line of codeLines) {
+                    // If the line is short enough, add it as is
+                    pdf.setFont('courier', 'normal');
+                    pdf.setFontSize(10);
+                    const lineWidth = pdf.getTextWidth(line);
+                    
+                    if (lineWidth <= effectiveWidth) {
+                        wrappedLines.push(line);
+                    } else {
+                        // Need to wrap this line
+                        let currentPosition = 0;
+                        let currentLine = "";
+                        
+                        // Handle by characters for code (not by words like regular text)
+                        // This preserves indentation better for code
+                        while (currentPosition < line.length) {
+                            // Take characters until we reach the width limit
+                            let testLine = currentLine;
+                            let charCount = 0;
+                            let maxCharsPerLine = 0;
+                            
+                            // First determine approximate max chars per line
+                            if (maxCharsPerLine === 0) {
+                                const avgCharWidth = pdf.getTextWidth("X");
+                                maxCharsPerLine = Math.floor(effectiveWidth / avgCharWidth);
+                            }
+                            
+                            // Try to fit as many characters as possible
+                            while (currentPosition + charCount < line.length && 
+                                  pdf.getTextWidth(testLine + line[currentPosition + charCount]) <= effectiveWidth) {
+                                testLine += line[currentPosition + charCount];
+                                charCount++;
+                            }
+                            
+                            // Add this segment
+                            wrappedLines.push(testLine);
+                            currentPosition += charCount;
+                            currentLine = ""; // Reset for next segment
+                        }
+                    }
+                }
+                
+                // Calculate total height needed
+                const totalHeight = wrappedLines.length * lineHeight + (blockPadding * 2);
+                
+                // Draw the background for the entire code block
+                const startY = yPosition - blockPadding;
+                
+                // Begin rendering code block
+                pdf.setTextColor(codeColor.r, codeColor.g, codeColor.b);
+                
+                // Draw text first, tracking positions for background
+                let linePositions = [];
+                let lineYStart = yPosition;
+                
+                // Process each wrapped line
+                for (let i = 0; i < wrappedLines.length; i++) {
+                    const line = wrappedLines[i];
+                    
+                    // Check if we need a new page
+                    if (yPosition > safeBottom) {
+                        // Save current position information
+                        linePositions.push({
+                            start: lineYStart,
+                            end: yPosition - lineHeight,
+                            pageNum: currentPage
+                        });
+                        
+                        // Add page number to current page
+                        addPageNumber(pdf, currentPage, theme);
+                        
+                        // Add a new page
+                        pdf.addPage();
+                        currentPage++;
+                        
+                        // Fill background
+                        pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
+                        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+                        
+                        // Reset y position to top margin
+                        yPosition = standardMargin.top;
+                        lineYStart = yPosition;
+                        
+                        // Reset text color for new page
+                        pdf.setTextColor(codeColor.r, codeColor.g, codeColor.b);
+                        pdf.setFont('courier', 'normal');
+                        pdf.setFontSize(10);
+                    }
+                    
+                    // Draw the text
+                    pdf.text(line, margin.left, yPosition);
+                    yPosition += lineHeight;
+                }
+                
+                // Save the final section
+                linePositions.push({
+                    start: lineYStart,
+                    end: yPosition - lineHeight,
+                    pageNum: currentPage
+                });
+                
+                // Now go back and draw backgrounds for each page section
+                const currentPageNum = currentPage;
+                
+                for (const section of linePositions) {
+                    // Switch to the page for this section
+                    if (section.pageNum !== pdf.getCurrentPageInfo().pageNumber) {
+                        pdf.setPage(section.pageNum);
+                    }
+                    
+                    // Calculate height for this section
+                    const sectionHeight = section.end - section.start + (blockPadding * 2);
+                    
+                    // Draw background rectangle for this section
+                    pdf.setFillColor(bgColor.r, bgColor.g, bgColor.b);
+                    pdf.rect(
+                        margin.left - blockPadding,
+                        section.start - blockPadding,
+                        effectiveWidth + (blockPadding * 2),
+                        sectionHeight,
+                        'F'
+                    );
+                    
+                    // Draw left cyan border
+                    pdf.setFillColor(92, 207, 230); // Cyan
+                    pdf.rect(
+                        margin.left - blockPadding,
+                        section.start - blockPadding,
+                        2, // Border width
+                        sectionHeight,
+                        'F'
+                    );
+                }
+                
+                // Return to each page and redraw the text on top of the backgrounds
+                for (let i = 0; i < linePositions.length; i++) {
+                    const section = linePositions[i];
+                    
+                    // Switch to the page for this section
+                    if (section.pageNum !== pdf.getCurrentPageInfo().pageNumber) {
+                        pdf.setPage(section.pageNum);
+                    }
+                    
+                    // Reset text properties
+                    pdf.setTextColor(codeColor.r, codeColor.g, codeColor.b);
+                    pdf.setFont('courier', 'normal');
+                    pdf.setFontSize(10);
+                    
+                    // Calculate which lines are on this page
+                    let startLineIndex = 0;
+                    let endLineIndex = 0;
+                    let currentY = section.start;
+                    
+                    // Find the lines for this section
+                    for (let j = 0; j < i; j++) {
+                        startLineIndex += Math.ceil((linePositions[j].end - linePositions[j].start) / lineHeight);
+                    }
+                    
+                    endLineIndex = startLineIndex + Math.ceil((section.end - section.start) / lineHeight);
+                    
+                    // Redraw text on this page
+                    for (let j = startLineIndex; j < endLineIndex && j < wrappedLines.length; j++) {
+                        pdf.text(wrappedLines[j], margin.left, currentY);
+                        currentY += lineHeight;
+                    }
+                }
+                
+                // Return to the last page where we left off
+                if (pdf.getCurrentPageInfo().pageNumber !== currentPageNum) {
+                    pdf.setPage(currentPageNum);
+                }
+                
+                // Add spacing after code block
+                yPosition += 5;
+                
+                // Reset to normal font and color
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(11);
+                if (theme.text === '#ffffff' || theme.text === '#fff') {
+                    pdf.setTextColor(255, 255, 255);
+                } else {
+                    pdf.setTextColor(0, 0, 0);
+                }
+            
             } else if (element.classList.contains('code-snippet')) {
                 // Handle code snippets
                 pdf.setFontSize(10);
@@ -568,7 +845,7 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
                 
                 if (img && img.src) {
                     // Check if we need a new page
-                    if (yPosition > pageHeight - margin.bottom - 50) { // Reserve more space for images
+                    if (yPosition > safeBottom - 40) { // Reserve space for images
                         // Add page number to current page
                         addPageNumber(pdf, currentPage, theme);
                         
@@ -581,19 +858,19 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
                         pdf.rect(0, 0, pageWidth, pageHeight, 'F');
                         
                         // Reset y position to top margin
-                        yPosition = margin.top;
+                        yPosition = standardMargin.top;
                     }
                     
                     try {
                         // Calculate image dimensions while maintaining aspect ratio
-                        const maxWidth = contentWidth;
-                        const maxHeight = 100; // Max height in mm for the image
+                        const maxWidth = contentWidth * 0.8; // Reduce to 80% of content width
+                        const maxHeight = 80; // Reduce max height to 80mm (was 100mm)
                         
                         // Add image to PDF
                         pdf.addImage(
                             img.src, 
                             'JPEG', 
-                            margin.left, 
+                            margin.left + (contentWidth - maxWidth) / 2, // Center the image
                             yPosition, 
                             maxWidth, 
                             maxHeight, 
@@ -627,16 +904,18 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
                 
                 // Calculate indentation
                 const text = element.textContent;
-                const indentMatch = text.match(/^(\s*)/);
-                const indentLevel = indentMatch ? indentMatch[0].length / 2 : 0;
-                const indentSize = 5; // mm per indent level
-                
-                // Add text only (no bullet dot)
-                pdf.text(text.trim(), margin.left + (indentLevel * indentSize), yPosition);
+                const match = text.match(/^(\s*)-(\s+)(.*)$/);
+                if (match) {
+                    const spaces = match[1];
+                    const indent = pdf.getTextWidth(spaces);
+                    pdf.text(text, margin.left + indent, yPosition);
+                } else {
+                    pdf.text(text, margin.left, yPosition);
+                }
                 yPosition += 6;
                 
-            } else {
-                // Handle regular paragraphs
+            } else if (element.tagName === 'P') {
+                // Handle paragraphs - may be regular text or have special classes
                 pdf.setFontSize(11);
                 pdf.setFont('helvetica', 'normal');
                 
@@ -647,131 +926,80 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
                     pdf.setTextColor(0, 0, 0);
                 }
                 
-                // Check if the line contains inline code (text wrapped in backticks)
-                const codeMatches = element.innerHTML.match(/`([^`]+)`/g);
-                if (codeMatches) {
-                    // Split the text by code segments
-                    let parts = element.innerHTML.split(/(`[^`]+`)/g);
-                    let xPos = margin.left;
-                    let lineHeight = 6;
+                const text = element.textContent;
+                if (!text || text.trim() === '') {
+                    // Empty paragraph - just add some space
+                    yPosition += 4;
+                    continue;
+                }
+                
+                // Handle long paragraphs with text wrapping
+                const maxWidth = contentWidth;
+                const words = text.split(' ');
+                let currentLine = '';
+                
+                for (let j = 0; j < words.length; j++) {
+                    const word = words[j];
+                    const testLine = currentLine + (currentLine ? ' ' : '') + word;
+                    const testWidth = pdf.getTextWidth(testLine);
                     
-                    // Set up text colors based on theme
-                    const textRGB = theme.text === '#ffffff' || theme.text === '#fff' ? 
-                        { r: 255, g: 255, b: 255 } : 
-                        { r: 0, g: 0, b: 0 };
-                    const codeColor = theme.codeText === '#5ccfe6' ? 
-                        { r: 92, g: 207, b: 230 } : 
-                        { r: 0, g: 123, b: 255 };
-                    
-                    for (let part of parts) {
-                        // Check if this part is code (wrapped in backticks)
-                        if (part.startsWith('`') && part.endsWith('`')) {
-                            // Set code style (background rectangle first)
-                            const codeText = part.substring(1, part.length - 1);
+                    if (testWidth > maxWidth) {
+                        // Check if we need a new page
+                        if (yPosition > safeBottom - 15) {
+                            // Add page number to current page
+                            addPageNumber(pdf, currentPage, theme);
                             
-                            // Get text width for the background rectangle
-                            pdf.setFont('courier', 'normal');
-                            pdf.setFontSize(10);
-                            const textWidth = pdf.getTextWidth(codeText);
+                            // Add a new page
+                            pdf.addPage();
+                            currentPage++;
                             
-                            // Draw code background rectangle
-                            const bgColor = mode === 'dark' ? 
-                                { r: 92, g: 207, b: 230, a: 0.1 } : // Dark mode - cyan with 10% opacity
-                                { r: 0, g: 123, b: 255, a: 0.1 };   // Light mode - blue with 10% opacity
+                            // Fill background
+                            pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
+                            pdf.rect(0, 0, pageWidth, pageHeight, 'F');
                             
-                            // Set background rectangle with slight padding
-                            pdf.setFillColor(bgColor.r, bgColor.g, bgColor.b);
-                            const padding = 2; // mm
-                            const rectHeight = 5; // mm
-                            pdf.rect(
-                                xPos - padding/2, 
-                                yPosition - rectHeight + padding/2, 
-                                textWidth + padding, 
-                                rectHeight, 
-                                'F'
-                            );
-                            
-                            // Set code text color
-                            pdf.setTextColor(codeColor.r, codeColor.g, codeColor.b);
-                            
-                            // Draw code text
-                            pdf.text(codeText, xPos, yPosition);
-                            
-                            // Update position
-                            xPos += textWidth + padding;
-                            
-                            // Reset text color for normal text
-                            pdf.setTextColor(textRGB.r, textRGB.g, textRGB.b);
-                            pdf.setFont('helvetica', 'normal');
-                            pdf.setFontSize(11);
-                        } else if (part.trim() !== '') {
-                            // Regular text
-                            pdf.text(part, xPos, yPosition);
-                            xPos += pdf.getTextWidth(part);
+                            // Reset y position to top margin
+                            yPosition = standardMargin.top;
                         }
-                    }
-                    
-                    // Move to next line
-                    yPosition += lineHeight;
-                } else {
-                    // Handle potential text wrapping by breaking it into lines
-                    const text = element.textContent;
-                    const textWidth = pdf.getTextWidth(text);
-                    
-                    if (textWidth <= contentWidth) {
-                        // Short enough to fit on one line
-                        pdf.text(text, margin.left, yPosition);
+                        
+                        pdf.text(currentLine, margin.left, yPosition);
                         yPosition += 6;
+                        currentLine = word;
                     } else {
-                        // Need to wrap text
-                        const words = text.split(' ');
-                        let currentLine = '';
-                        
-                        for (let j = 0; j < words.length; j++) {
-                            const word = words[j];
-                            const testLine = currentLine + (currentLine ? ' ' : '') + word;
-                            const testWidth = pdf.getTextWidth(testLine);
-                            
-                            if (testWidth > contentWidth) {
-                                // Check if we need a new page
-                                if (yPosition > pageHeight - margin.bottom - 15) {
-                                    // Add page number to current page
-                                    addPageNumber(pdf, currentPage, theme);
-                                    
-                                    // Add a new page
-                                    pdf.addPage();
-                                    currentPage++;
-                                    
-                                    // Fill background
-                                    pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
-                                    pdf.rect(0, 0, pageWidth, pageHeight, 'F');
-                                    
-                                    // Reset y position to top margin
-                                    yPosition = margin.top;
-                                }
-                                
-                                pdf.text(currentLine, margin.left, yPosition);
-                                yPosition += 6;
-                                currentLine = word;
-                            } else {
-                                currentLine = testLine;
-                            }
-                        }
-                        
-                        // Add the last line if any
-                        if (currentLine) {
-                            pdf.text(currentLine, margin.left, yPosition);
-                            yPosition += 6;
-                        }
+                        currentLine = testLine;
                     }
                 }
                 
-                // Add a bit of space after each element
-                yPosition += 2;
+                // Add the last line if any
+                if (currentLine) {
+                    // Check if we need a new page for the last line
+                    if (yPosition > safeBottom - 6) {
+                        // Add page number to current page
+                        addPageNumber(pdf, currentPage, theme);
+                        
+                        // Add a new page
+                        pdf.addPage();
+                        currentPage++;
+                        
+                        // Fill background
+                        pdf.setFillColor(bgRGB.r, bgRGB.g, bgRGB.b);
+                        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+                        
+                        // Reset y position to top margin
+                        yPosition = standardMargin.top;
+                    }
+                    
+                    pdf.text(currentLine, margin.left, yPosition);
+                    yPosition += 6;
+                }
             }
             
             // Add a bit of space after each element
             yPosition += 2;
+        }
+        
+        // Clean up the temporary div
+        if (document.body.contains(tempDiv)) {
+            document.body.removeChild(tempDiv);
         }
         
         // Add page number to the last page
