@@ -17,12 +17,22 @@
     --completed-text-color: #888888;
     --completed-border-color: #5a5a5a;
     --delete-button-color: #cccccc;
-    --delete-button-hover-color: #ff6b6b; /* Reddish for delete hover */
+    --delete-button-hover-color: #880f0f; /* Red for delete hover */
     --cancel-button-color: #888888;
     --cancel-button-hover-color: #aaaaaa;
     --important-color: #ffcc00; /* Yellow for important star */
     --time-color: #a0a0a0; /* Color for task time */
     --timeless-task-color: #7aad7a; /* Lighter mossy green for tasks without a time */
+
+    /* --- Task Custom Colors (Rainglow-inspired palette) --- */
+    --task-color-default: #7aad7a; /* Default is the same as timeless-task-color */
+    --task-color-teal: #00739c; /* Teal (same as accent) */
+    --task-color-purple: #353c9c; /* Rich Azure - deeper blue */
+    --task-color-blue: #6571c2; /* Indigo Blue - complements purple */
+    --task-color-coral: #792257; /* Deep Magenta - complements teal */
+    --task-color-amber: #460355; /* Plum Purple - earthy rich tone */
+    --task-color-forest: #006124ac; /* Forest Green - natural muted tone */
+    /* --- End Task Custom Colors --- */
 
     /* --- Folder Tree Variables --- */
     --folder-icon-color: #a0a0a0;
@@ -285,6 +295,20 @@ body {
 .modal-input-group input[type="time"]:focus {
     outline: none; border-color: var(--button-color);
     box-shadow: 0 0 0 2px rgba(4, 164, 159, 0.3);
+}
+.modal-input-group input[type="text"] {
+    padding: 10px 12px; border: 1px solid var(--hover-bg-color);
+    background-color: var(--input-bg-color); color: var(--text-color);
+    border-radius: var(--border-radius); font-family: var(--font-family);
+    font-size: 1em; width: 100%; 
+    transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+}
+.modal-input-group input[type="text"]:focus {
+    outline: none; border-color: var(--button-color);
+    box-shadow: 0 0 0 2px rgba(4, 164, 159, 0.3);
+}
+.modal-input-group input[type="text"]::placeholder {
+    color: #666; opacity: 1;
 }
 .modal-recurring-note { /* Example */
     font-size: 0.8em;

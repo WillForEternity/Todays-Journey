@@ -30,6 +30,7 @@ CalendarApp.dom = {
     // Modal elements
     taskDetailsModal: App.dom.taskDetailsModal,
     modalTimeInput: document.getElementById('modalTimeInput'),
+    modalLocationInput: document.getElementById('modalLocationInput'),
     modalRecurringCheckbox: document.getElementById('modalRecurringCheckbox'),
     recurringNote: document.querySelector('.modal-recurring-note'),
     modalConfirmBtn: document.getElementById('modalConfirmBtn'),
@@ -44,6 +45,8 @@ CalendarApp.state = {
     tempTaskDataForModal: {},
     isInitialized: false,
     instanceCompletions: {}, // per-date overrides for recurring task completions
+    activeColorPicker: null, // Tracks the active color picker
+    taskColor: null, // Tracks the selected color for a task
 };
 
 // --- Calendar Configuration ---
@@ -101,6 +104,35 @@ CalendarApp.updateTaskDB = (task) => App.dbAction(App.config.TASK_STORE_NAME, 'r
 CalendarApp.deleteTaskDB = (taskId) => App.dbAction(App.config.TASK_STORE_NAME, 'readwrite', 'delete', taskId);
 CalendarApp.getAllTasksDB = () => App.dbAction(App.config.TASK_STORE_NAME, 'readonly', 'getAll');
 
+/**
+ * Updates the color of a task.
+ * @param {string} taskId - The ID of the task.
+ * @param {string} originalDate - The original date the task belongs to.
+ * @param {string} newColor - The color to apply.
+ */
+CalendarApp.updateTaskColor = async (taskId, originalDate, newColor) => {
+    const task = CalendarApp.findTaskInMemory(taskId, originalDate);
+    if (!task || task.time) return; // Only allow color changes for timeless tasks
+
+    const oldColor = task.customColor || 'default';
+    task.customColor = newColor;
+    task.updatedAt = Date.now();
+
+    // Optimistic UI update
+    CalendarApp.renderTaskList();
+    
+    try {
+        await CalendarApp.updateTaskDB(task);
+        console.log("Calendar: Task color updated in DB:", taskId, newColor);
+    } catch (error) {
+        console.error("Calendar: Failed to update task color:", error);
+        // Revert state on error
+        task.customColor = oldColor;
+        task.updatedAt = Date.now();
+        CalendarApp.renderTaskList();
+    }
+};
+
 // --- Calendar Data Loading & Processing ---
 
 /**
@@ -126,7 +158,8 @@ CalendarApp.loadTasks = async () => {
             if (typeof task.important === 'undefined') { task.important = false; taskModified = true; }
             if (typeof task.completed === 'undefined') { task.completed = false; taskModified = true; }
             if (typeof task.createdAt === 'undefined') { task.createdAt = Date.now(); taskModified = true; }
-             if (typeof task.updatedAt === 'undefined') { task.updatedAt = task.createdAt || Date.now(); taskModified = true; } // Add updatedAt
+            if (typeof task.updatedAt === 'undefined') { task.updatedAt = task.createdAt || Date.now(); taskModified = true; }
+            if (typeof task.customColor === 'undefined') { task.customColor = 'default'; taskModified = true; }
 
             validTasks.push(task);
 
@@ -452,8 +485,14 @@ CalendarApp.createTaskListItem = (task, displayDate) => {
         ? (CalendarApp.state.instanceCompletions[displayDate]?.[task.id] ?? false)
         : !!task.completed;
     li.classList.toggle('completed', completedState);
-    li.classList.toggle('is-recurring-instance', !!task.isInstance);
+    li.classList.toggle('is-recurring-instance', isInstance);
     li.classList.toggle('timeless-task', !task.time);
+    
+    // Add custom color class if present and it's a timeless task
+    if (!task.time && task.customColor) {
+        li.classList.add(`task-color-${task.customColor}`);
+    }
+    
     li.dataset.taskId = task.id;
     li.dataset.originalDate = task.originalDate;
     li.dataset.displayDate = displayDate;
@@ -470,6 +509,12 @@ CalendarApp.createTaskListItem = (task, displayDate) => {
     textSpan.className = 'task-text';
     textSpan.textContent = task.text;
     contentWrapper.appendChild(textSpan);
+    if (task.location) {
+        const locSpan = document.createElement('span');
+        locSpan.className = 'task-location';
+        locSpan.textContent = task.location;
+        contentWrapper.appendChild(locSpan);
+    }
 
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'task-actions';
@@ -496,7 +541,7 @@ CalendarApp.createTaskListItem = (task, displayDate) => {
         const liElement = e.target.closest('li');
          if (liElement?.dataset.taskId && liElement?.dataset.originalDate) {
             CalendarApp.handleDeleteTask(liElement.dataset.taskId, liElement.dataset.originalDate, displayDate);
-        }
+         }
     });
 
     actionsDiv.appendChild(importantBtn);
@@ -505,11 +550,40 @@ CalendarApp.createTaskListItem = (task, displayDate) => {
     li.appendChild(contentWrapper);
     li.appendChild(actionsDiv);
 
-     li.addEventListener('click', (event) => {
-         if (!actionsDiv.contains(event.target)) {
+    // Add color picker for timeless tasks (not recurring instances)
+    if (!task.time && !isInstance) {
+        const colorPicker = CalendarApp.createColorPicker(task.id, task.originalDate, task.customColor || 'default');
+        li.appendChild(colorPicker);
+        
+        // Add vertical divider
+        const divider = document.createElement('div');
+        divider.className = 'color-picker-divider';
+        li.appendChild(divider);
+        
+        // Add hover/touch handler for showing color picker
+        li.addEventListener('mouseenter', () => {
+            // Close any other open color pickers
+            if (CalendarApp.state.activeColorPicker && 
+                CalendarApp.state.activeColorPicker !== colorPicker) {
+                CalendarApp.state.activeColorPicker.classList.remove('visible');
+            }
+            colorPicker.classList.add('visible');
+            CalendarApp.state.activeColorPicker = colorPicker;
+        });
+        
+        li.addEventListener('mouseleave', () => {
+            colorPicker.classList.remove('visible');
+            if (CalendarApp.state.activeColorPicker === colorPicker) {
+                CalendarApp.state.activeColorPicker = null;
+            }
+        });
+    }
+
+    li.addEventListener('click', (event) => {
+        if (!actionsDiv.contains(event.target) && !event.target.closest('.color-picker')) {
             CalendarApp.toggleTaskCompletion(li.dataset.taskId, li.dataset.originalDate, li.dataset.displayDate);
-         }
-     });
+        }
+    });
 
     return li;
 };
@@ -522,6 +596,12 @@ CalendarApp.createTaskListItem = (task, displayDate) => {
 CalendarApp.createImportantTaskListItem = (taskInfo) => {
     const li = document.createElement('li');
     li.classList.toggle('completed', !!taskInfo.completed);
+    
+    // Add custom color class if present and it's a timeless task
+    if (!taskInfo.time && taskInfo.customColor) {
+        li.classList.add(`task-color-${taskInfo.customColor}`);
+    }
+    
     li.dataset.taskId = taskInfo.id;
     li.dataset.taskDate = taskInfo.originalDate;
 
@@ -537,7 +617,12 @@ CalendarApp.createImportantTaskListItem = (taskInfo) => {
     textSpan.className = 'task-text';
     textSpan.textContent = taskInfo.text;
     contentWrapper.appendChild(textSpan);
-
+    if (taskInfo.location) {
+        const locSpan = document.createElement('span');
+        locSpan.className = 'task-location';
+        locSpan.textContent = taskInfo.location;
+        contentWrapper.appendChild(locSpan);
+    }
     const dateSpan = document.createElement('span');
     dateSpan.className = 'task-date';
     const parsedDate = CalendarApp.parseDateString(taskInfo.originalDate);
@@ -639,14 +724,29 @@ CalendarApp.handleAddTaskRequest = () => {
 };
 
 /**
+ * Opens the task details modal to collect time/recurring info.
+ */
+CalendarApp.openModal = () => {
+    const { modalTimeInput, modalLocationInput, modalRecurringCheckbox, recurringNote, taskDetailsModal } = CalendarApp.dom;
+    if (!taskDetailsModal || !modalTimeInput || !modalLocationInput || !modalRecurringCheckbox || !recurringNote) return;
+    
+    modalTimeInput.value = '';
+    modalLocationInput.value = '';
+    modalRecurringCheckbox.checked = false;
+    recurringNote.style.display = 'none';
+    taskDetailsModal.classList.add('visible');
+    setTimeout(() => modalTimeInput.focus(), 50); // Slight delay for focus
+};
+
+/**
  * Finalizes adding a task after modal confirmation. Adds to DB and updates UI.
  */
 CalendarApp.finalizeTaskAddition = async () => {
-    const { modalTimeInput, modalRecurringCheckbox } = CalendarApp.dom;
+    const { modalTimeInput, modalLocationInput, modalRecurringCheckbox } = CalendarApp.dom;
     const { text, isImportant } = CalendarApp.state.tempTaskDataForModal;
     const selectedDate = CalendarApp.state.selectedDate;
 
-    if (!text || !selectedDate || !modalTimeInput || !modalRecurringCheckbox) {
+    if (!text || !selectedDate || !modalTimeInput || !modalLocationInput || !modalRecurringCheckbox) {
         console.error("Error: Task text, selected date or modal elements missing for finalization.");
         CalendarApp.closeModal();
         return;
@@ -654,6 +754,7 @@ CalendarApp.finalizeTaskAddition = async () => {
 
     const timeValue = modalTimeInput.value;
     const time = timeValue ? timeValue : null;
+    const location = modalLocationInput.value.trim() || null;
     const isRecurringWeekly = modalRecurringCheckbox.checked;
 
     const newTask = {
@@ -663,7 +764,9 @@ CalendarApp.finalizeTaskAddition = async () => {
         completed: false,
         important: isImportant,
         time,
+        location,
         isRecurringWeekly,
+        customColor: 'default', // Default color for new tasks
         createdAt: Date.now(),
         updatedAt: Date.now(),
     };
@@ -876,20 +979,51 @@ CalendarApp.findTaskInMemory = (taskId, originalDate) => {
     return CalendarApp.state.allTasks[originalDate].find(task => task.id === taskId);
 };
 
-
-// --- Calendar Modal Control ---
-
-CalendarApp.openModal = () => {
-    const { modalTimeInput, modalRecurringCheckbox, recurringNote, taskDetailsModal } = CalendarApp.dom;
-    if (!taskDetailsModal || !modalTimeInput || !modalRecurringCheckbox || !recurringNote) return;
+/**
+ * Creates a color picker element.
+ * @param {string} taskId - The task ID.
+ * @param {string} originalDate - The original date of the task.
+ * @param {string} currentColor - The currently selected color.
+ * @returns {HTMLElement} - The color picker element.
+ */
+CalendarApp.createColorPicker = (taskId, originalDate, currentColor = 'default') => {
+    const colorPicker = document.createElement('div');
+    colorPicker.className = 'color-picker';
+    colorPicker.dataset.taskId = taskId;
+    colorPicker.dataset.originalDate = originalDate;
     
-    modalTimeInput.value = '';
-    modalRecurringCheckbox.checked = false;
-    recurringNote.style.display = 'none';
-    taskDetailsModal.classList.add('visible');
-    setTimeout(() => modalTimeInput.focus(), 50); // Slight delay for focus
+    const colorOptions = [
+        { name: 'default', label: 'Default' },
+        { name: 'teal', label: 'Teal' },
+        { name: 'purple', label: 'Purple' },
+        { name: 'blue', label: 'Blue' },
+        { name: 'coral', label: 'Coral' },
+        { name: 'amber', label: 'Amber' },
+        { name: 'forest', label: 't' }
+    ];
+    
+    colorOptions.forEach(color => {
+        const swatch = document.createElement('div');
+        swatch.className = `color-swatch color-${color.name}`;
+        swatch.title = color.label;
+        if (color.name === currentColor) {
+            swatch.classList.add('selected');
+        }
+        
+        swatch.addEventListener('click', (e) => {
+            e.stopPropagation();
+            CalendarApp.updateTaskColor(taskId, originalDate, color.name);
+            colorPicker.querySelector('.selected')?.classList.remove('selected');
+            swatch.classList.add('selected');
+        });
+        
+        colorPicker.appendChild(swatch);
+    });
+    
+    return colorPicker;
 };
 
+// --- Calendar Modal Control ---
 CalendarApp.closeModal = () => {
     const { taskDetailsModal } = CalendarApp.dom;
     if (!taskDetailsModal) return;

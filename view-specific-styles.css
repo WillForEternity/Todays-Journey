@@ -134,28 +134,184 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
     color: var(--completed-text-color);
 }
 
+/* Style for completed task location badge */
+#taskList li.completed .task-location,
+#importantList li.completed .task-location {
+    background-color: var(--completed-border-color) !important;
+    color: var(--completed-text-color);
+    text-decoration: line-through;
+}
+
 /* Timeless tasks */
 #taskList li.timeless-task:not(.completed) {
     border-left-color: var(--timeless-task-color);
 }
 
-#taskList li.timeless-task:not(.completed) .task-text {
-    color: var(--text-color); /* Use theme's default text color */
+/* Custom colored tasks */
+#taskList li.task-color-teal:not(.completed) {
+    border-left-color: var(--task-color-teal);
+}
+#taskList li.task-color-purple:not(.completed) {
+    border-left-color: var(--task-color-purple);
+}
+#taskList li.task-color-blue:not(.completed) {
+    border-left-color: var(--task-color-blue);
+}
+#taskList li.task-color-coral:not(.completed) {
+    border-left-color: var(--task-color-coral);
+}
+#taskList li.task-color-amber:not(.completed) {
+    border-left-color: var(--task-color-amber);
+}
+#taskList li.task-color-forest:not(.completed) {
+    border-left-color: var(--task-color-forest);
 }
 
 /* Make sure completed styling overrides timeless task styling */
-#taskList li.timeless-task.completed {
+#taskList li.timeless-task.completed,
+#taskList li[class*="task-color-"].completed {
     border-left-color: var(--completed-border-color);
     background-color: #2a2a2d;
 }
 
-#taskList li.timeless-task.completed .task-text {
+#taskList li.timeless-task.completed .task-text,
+#taskList li[class*="task-color-"].completed .task-text {
     text-decoration: line-through;
     color: var(--completed-text-color);
 }
 
-#taskList li.timeless-task.completed .task-content-wrapper {
+#taskList li.timeless-task.completed .task-content-wrapper,
+#taskList li[class*="task-color-"].completed .task-content-wrapper {
     opacity: 0.7;
+}
+
+/* Color-matched location badges */
+#taskList li.task-color-default:not(.completed) .task-location {
+    background-color: var(--task-color-default);
+}
+#taskList li.task-color-teal:not(.completed) .task-location {
+    background-color: var(--task-color-teal);
+}
+#taskList li.task-color-purple:not(.completed) .task-location {
+    background-color: var(--task-color-purple);
+}
+#taskList li.task-color-blue:not(.completed) .task-location {
+    background-color: var(--task-color-blue);
+}
+#taskList li.task-color-coral:not(.completed) .task-location {
+    background-color: var(--task-color-coral);
+}
+#taskList li.task-color-amber:not(.completed) .task-location {
+    background-color: var(--task-color-amber);
+}
+#taskList li.task-color-forest:not(.completed) .task-location {
+    background-color: var(--task-color-forest);
+}
+
+/* Important list location badge colors */
+#importantList li.task-color-default:not(.completed) .task-location {
+    background-color: var(--task-color-default);
+}
+#importantList li.task-color-teal:not(.completed) .task-location {
+    background-color: var(--task-color-teal);
+}
+#importantList li.task-color-purple:not(.completed) .task-location {
+    background-color: var(--task-color-purple);
+}
+#importantList li.task-color-blue:not(.completed) .task-location {
+    background-color: var(--task-color-blue);
+}
+#importantList li.task-color-coral:not(.completed) .task-location {
+    background-color: var(--task-color-coral);
+}
+#importantList li.task-color-amber:not(.completed) .task-location {
+    background-color: var(--task-color-amber);
+}
+#importantList li.task-color-forest:not(.completed) .task-location {
+    background-color: var(--task-color-forest);
+}
+
+/* Color picker UI */
+.color-picker {
+    display: none;
+    position: absolute;
+    top: 50%;
+    right: 90px; /* Moved further left to accommodate divider */
+    transform: translateY(-50%) translateX(0);
+    background-color: transparent;
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 3px 6px;
+    z-index: 5;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    opacity: 0;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+}
+
+/* Vertical divider */
+.color-picker-divider {
+    display: none;
+    position: absolute;
+    top: 50%;
+    right: 80px; /* Position between color picker and action buttons */
+    transform: translateY(-50%);
+    height: 28px;
+    width: 1px;
+    background-color: #666;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+#taskList li.timeless-task:hover .color-picker-divider {
+    display: block;
+    opacity: 1;
+}
+
+.color-picker.visible {
+    display: flex;
+    align-items: center;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(-50%) translateX(0);
+}
+
+.color-swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    margin: 0 4px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border: none;
+}
+
+.color-swatch:hover {
+    transform: scale(1.2);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.color-swatch.selected {
+    box-shadow: 0 0 0 2px #fff;
+}
+
+.color-default { background-color: var(--task-color-default); }
+.color-teal { background-color: var(--task-color-teal); }
+.color-purple { background-color: var(--task-color-purple); }
+.color-blue { background-color: var(--task-color-blue); }
+.color-coral { background-color: var(--task-color-coral); }
+.color-amber { background-color: var(--task-color-amber); }
+.color-forest { background-color: var(--task-color-forest); }
+
+#taskList li.timeless-task {
+    position: relative; /* Ensure color picker is positioned relative to the task item */
+}
+
+#taskList li.timeless-task:hover .color-picker {
+    display: flex;
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .task-content-wrapper {
@@ -177,7 +333,15 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
     word-break: break-word;
     line-height: 1.4;
 }
-
+.task-location {
+    font-size: 0.85em;
+    background-color: var(--accent-color);
+    color: #111;
+    padding: 2px 8px;
+    border-radius: var(--border-radius);
+    margin-left: 8px;
+    flex-shrink: 0;
+}
 .task-actions {
     display: flex;
     align-items: center;
