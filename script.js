@@ -43,6 +43,7 @@ CalendarApp.state = {
     allTasks: {}, // In-memory map: { "YYYY-MM-DD": [taskObj, ...] }
     tempTaskDataForModal: {},
     isInitialized: false,
+    instanceCompletions: {}, // per-date overrides for recurring task completions
 };
 
 // --- Calendar Configuration ---
@@ -446,20 +447,25 @@ CalendarApp.renderImportantTasks = () => {
  */
 CalendarApp.createTaskListItem = (task, displayDate) => {
      const li = document.createElement('li');
-     li.classList.toggle('completed', !!task.completed);
-     li.classList.toggle('is-recurring-instance', !!task.isInstance);
-     li.classList.toggle('timeless-task', !task.time); // Add class for tasks without a time
-     li.dataset.taskId = task.id;
-     li.dataset.originalDate = task.originalDate;
+     const isInstance = !!task.isInstance;
+     const completedState = isInstance
+        ? (CalendarApp.state.instanceCompletions[displayDate]?.[task.id] ?? false)
+        : !!task.completed;
+    li.classList.toggle('completed', completedState);
+    li.classList.toggle('is-recurring-instance', !!task.isInstance);
+    li.classList.toggle('timeless-task', !task.time);
+    li.dataset.taskId = task.id;
+    li.dataset.originalDate = task.originalDate;
+    li.dataset.displayDate = displayDate;
 
-     const contentWrapper = document.createElement('div');
-     contentWrapper.className = 'task-content-wrapper';
-     if (task.time) {
-         const timeSpan = document.createElement('span');
-         timeSpan.className = 'task-time';
-         timeSpan.textContent = task.time;
-         contentWrapper.appendChild(timeSpan);
-     }
+    const contentWrapper = document.createElement('div');
+    contentWrapper.className = 'task-content-wrapper';
+    if (task.time) {
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'task-time';
+        timeSpan.textContent = task.time;
+        contentWrapper.appendChild(timeSpan);
+    }
     const textSpan = document.createElement('span');
     textSpan.className = 'task-text';
     textSpan.textContent = task.text;
@@ -501,9 +507,7 @@ CalendarApp.createTaskListItem = (task, displayDate) => {
 
      li.addEventListener('click', (event) => {
          if (!actionsDiv.contains(event.target)) {
-            if (li.dataset.taskId && li.dataset.originalDate) {
-                CalendarApp.toggleTaskCompletion(li.dataset.taskId, li.dataset.originalDate);
-            }
+            CalendarApp.toggleTaskCompletion(li.dataset.taskId, li.dataset.originalDate, li.dataset.displayDate);
          }
      });
 
@@ -705,31 +709,41 @@ CalendarApp.finalizeTaskAddition = async () => {
  * Toggles the completion status of a task.
  * @param {string} taskId - The ID of the task.
  * @param {string} originalDate - The original date the task belongs to.
+ * @param {string} instanceDate - The date of the instance to toggle (optional).
  */
-CalendarApp.toggleTaskCompletion = async (taskId, originalDate) => {
-     const task = CalendarApp.findTaskInMemory(taskId, originalDate);
-     if (task) {
-         const originalCompletedState = !!task.completed;
-         task.completed = !originalCompletedState;
-         task.updatedAt = Date.now();
-
-         // Optimistic UI update
-         CalendarApp.renderTaskList(); // Renders based on current state
-         CalendarApp.renderImportantTasks(); // Update if shown in important list
-
-         try {
+CalendarApp.toggleTaskCompletion = async (taskId, originalDate, instanceDate = originalDate) => {
+    const displayDate = instanceDate;
+    const isInstance = displayDate !== originalDate;
+    if (isInstance) {
+        if (!CalendarApp.state.instanceCompletions[displayDate]) {
+            CalendarApp.state.instanceCompletions[displayDate] = {};
+        }
+        const currentState = CalendarApp.state.instanceCompletions[displayDate][taskId] ?? false;
+        const newState = !currentState;
+        CalendarApp.state.instanceCompletions[displayDate][taskId] = newState;
+        CalendarApp.renderTaskList();
+        CalendarApp.renderImportantTasks();
+        return;
+    }
+    const task = CalendarApp.findTaskInMemory(taskId, originalDate);
+    if (task) {
+        const originalCompletedState = !!task.completed;
+        task.completed = !originalCompletedState;
+        task.updatedAt = Date.now();
+        // Optimistic UI update
+        CalendarApp.renderTaskList();
+        CalendarApp.renderImportantTasks();
+        try {
             await CalendarApp.updateTaskDB(task);
             console.log("Calendar: Task completion updated in DB:", taskId, task.completed);
-         } catch (error) {
+        } catch (error) {
             console.error("Calendar: Failed to update task completion:", error);
-            // Revert state on error
             task.completed = originalCompletedState;
-             task.updatedAt = Date.now(); // Or use previous timestamp?
+            task.updatedAt = Date.now();
             alert("Error updating task status. Please try again.");
-            // Re-render to show reverted state
             CalendarApp.renderTaskList();
             CalendarApp.renderImportantTasks();
-         }
+        }
     } else {
         console.warn("Calendar: Task not found for completion toggle:", taskId, originalDate);
     }
@@ -746,7 +760,6 @@ CalendarApp.toggleTaskCompletion = async (taskId, originalDate) => {
         const originalImportance = !!task.important;
         task.important = !originalImportance;
         task.updatedAt = Date.now();
-
         // Optimistic UI update
         CalendarApp.renderTaskList();
         CalendarApp.renderImportantTasks(); // Important list MUST be updated
@@ -756,7 +769,6 @@ CalendarApp.toggleTaskCompletion = async (taskId, originalDate) => {
              console.log("Calendar: Task importance updated in DB:", taskId, task.important);
          } catch(error) {
             console.error("Calendar: Failed to update task importance:", error);
-            // Revert state
             task.important = originalImportance;
              task.updatedAt = Date.now();
             alert("Error updating task importance. Please try again.");

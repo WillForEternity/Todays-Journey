@@ -103,13 +103,13 @@ const getThemeColors = (mode) => {
     } else if (mode === 'light') {
         return {
             background: '#ffffff',
-            text: '#000000',
-            secondaryText: '#666666',
-            accent: '#007bff',
-            headerText: '#007bff',
-            headerBorder: 'rgba(0, 123, 255, 0.3)',
-            codeText: '#007bff',
-            codeBackground: 'rgba(0, 123, 255, 0.1)',
+            text: '#333333',            // Darker gray instead of pure black
+            secondaryText: '#666666',   // Medium gray for secondary text
+            accent: '#505050',          // Dark gray accent instead of blue
+            headerText: '#404040',      // Dark gray for headers
+            headerBorder: 'rgba(80, 80, 80, 0.3)', // Subtle gray border
+            codeText: '#505050',        // Dark gray for code text
+            codeBackground: 'rgba(80, 80, 80, 0.05)', // Very light gray background
         };
     } else {
         throw new Error(`Invalid theme mode: ${mode}`);
@@ -167,6 +167,28 @@ const showThemeSelectionModal = () => {
     
     modalContent.appendChild(optionsContainer);
     
+    // Create logo checkbox option
+    const logoOption = document.createElement('div');
+    logoOption.style.marginTop = '15px';
+    logoOption.style.display = 'flex';
+    logoOption.style.alignItems = 'center';
+    logoOption.style.color = '#fff';
+    
+    const logoCheckbox = document.createElement('input');
+    logoCheckbox.type = 'checkbox';
+    logoCheckbox.id = 'includeLogoCheckbox';
+    logoCheckbox.style.marginRight = '8px';
+    
+    const logoLabel = document.createElement('label');
+    logoLabel.textContent = 'Include logo in PDF';
+    logoLabel.htmlFor = 'includeLogoCheckbox';
+    logoLabel.style.fontSize = '14px';
+    logoLabel.style.cursor = 'pointer';
+    
+    logoOption.appendChild(logoCheckbox);
+    logoOption.appendChild(logoLabel);
+    modalContent.appendChild(logoOption);
+    
     // Create buttons container
     const buttonsContainer = document.createElement('div');
     buttonsContainer.style.display = 'flex';
@@ -203,7 +225,8 @@ const showThemeSelectionModal = () => {
     exportButton.style.fontWeight = 'bold';
     exportButton.onclick = () => {
         document.body.removeChild(modalOverlay);
-        PDFExport.exportCurrentNote(selectedTheme);
+        const includeLogo = logoCheckbox.checked;
+        PDFExport.exportCurrentNote(selectedTheme, includeLogo);
     };
     buttonsContainer.appendChild(exportButton);
     
@@ -307,22 +330,76 @@ const createThemeOption = (theme, label, bgColor, textColor, accentColor) => {
 
 // Helper function to add page numbers
 const addPageNumber = (pdf, pageNum, theme) => {
-    pdf.setFont('helvetica');
-    pdf.setFontSize(9);
+    const pageWidth = pdf.internal.pageSize.width;
+    const pageHeight = pdf.internal.pageSize.height;
     
-    // Use appropriate text color based on theme
-    if (theme.text === '#ffffff' || theme.text === 'white') {
-        pdf.setTextColor(255, 255, 255);
+    // Set text color
+    if (theme.text === '#ffffff' || theme.text === '#fff') {
+        pdf.setTextColor(170, 170, 170); // Light gray for dark mode
     } else {
-        pdf.setTextColor(0, 0, 0);
+        pdf.setTextColor(100, 100, 100); // Dark gray for light mode
     }
     
-    // Add page number at the bottom center
-    pdf.text(`Page ${pageNum}`, 105, 290, { align: 'center' });
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    
+    // Add page number to bottom center
+    const text = `Page ${pageNum}`;
+    const textWidth = pdf.getTextWidth(text);
+    pdf.text(text, (pageWidth - textWidth) / 2, pageHeight - 10);
+};
+
+// Helper function to add logo to page
+const addLogo = async (pdf, theme) => {
+    const pageWidth = pdf.internal.pageSize.width;
+    const pageHeight = pdf.internal.pageSize.height;
+    
+    try {
+        // Use a data URL approach which is more reliable with jsPDF
+        // We'll load the image asynchronously
+        return new Promise((resolve, reject) => {
+            const logo = new Image();
+            
+            logo.onload = () => {
+                try {
+                    // Calculate dimensions preserving aspect ratio
+                    const aspectRatio = logo.width / logo.height;
+                    
+                    // Target width (in mm) - increased size
+                    const targetWidth = 60; // mm (increased from 35)
+                    
+                    // Calculate height to maintain aspect ratio
+                    const targetHeight = targetWidth / aspectRatio;
+                    
+                    // Position in bottom right - keep 8mm margins
+                    const xPos = pageWidth - targetWidth - 8;
+                    const yPos = pageHeight - targetHeight - 6.5;
+                    
+                    // Add the logo with calculated dimensions to avoid stretching
+                    pdf.addImage(logo, 'JPEG', xPos, yPos, targetWidth, targetHeight);
+                    resolve();
+                } catch (err) {
+                    console.error('Error adding logo to page:', err);
+                    resolve(); // Resolve anyway to not block PDF generation
+                }
+            };
+            
+            logo.onerror = (e) => {
+                console.error('Error loading logo image:', e);
+                resolve(); // Resolve anyway to not block PDF generation
+            };
+            
+            // Set the source after setting up handlers
+            logo.src = 'Images/BannerImage.jpg';
+        });
+    } catch (error) {
+        console.error('Error in logo processing:', error);
+        return Promise.resolve(); // Return resolved promise to continue PDF generation
+    }
 };
 
 // Main export function with improved pagination
-PDFExport.exportCurrentNote = async (mode = 'dark') => {
+PDFExport.exportCurrentNote = async (mode = 'dark', includeLogo = false) => {
     // Check if required libraries are loaded
     if (typeof jspdf === 'undefined' || typeof html2canvas === 'undefined') {
         console.error("Required libraries not loaded");
@@ -507,6 +584,18 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
                 contentWidth = pageWidth - margin.left - margin.right;
                 contentHeight = pageHeight - margin.top - margin.bottom;
                 safeBottom = pageHeight - margin.bottom - 30; // Reduced from 50 to 30mm
+                
+                // Reset font and text color to ensure consistency on new pages
+                // Must explicitly set to normal paragraph styling to avoid inheriting from author styling
+                pdf.setFontSize(11); // Standard paragraph text size
+                pdf.setFont('helvetica', 'normal'); // Standard font
+                
+                // Explicitly reset text color to main content color (not secondary text color)
+                if (theme.text === '#ffffff' || theme.text === '#fff') {
+                    pdf.setTextColor(255, 255, 255); // White for dark mode
+                } else {
+                    pdf.setTextColor(0, 0, 0); // Black for light mode
+                }
             }
             
             // Handle different element types
@@ -601,6 +690,18 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
                     
                     // Reset y position to top margin
                     yPosition = standardMargin.top;
+                    
+                    // Reset font and text color to ensure consistency on new pages
+                    // Must explicitly set to normal paragraph styling to avoid inheriting from author styling
+                    pdf.setFontSize(11); // Standard paragraph text size
+                    pdf.setFont('helvetica', 'normal'); // Standard font
+                    
+                    // Explicitly reset text color to main content color (not secondary text color)
+                    if (theme.text === '#ffffff' || theme.text === '#fff') {
+                        pdf.setTextColor(255, 255, 255); // White for dark mode
+                    } else {
+                        pdf.setTextColor(0, 0, 0); // Black for light mode
+                    }
                 }
                 
                 // Add some space before code block
@@ -708,7 +809,17 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
                         yPosition = standardMargin.top;
                         lineYStart = yPosition;
                         
-                        // Reset text color for new page
+                        // Reset font and text color to ensure consistency on new pages
+                        pdf.setFontSize(11); // Standard paragraph text size
+                        pdf.setFont('helvetica', 'normal'); // Standard font
+                        
+                        // Explicitly reset text color to main content color (not secondary text color)
+                        if (theme.text === '#ffffff' || theme.text === '#fff') {
+                            pdf.setTextColor(255, 255, 255); // White for dark mode
+                        } else {
+                            pdf.setTextColor(0, 0, 0); // Black for light mode
+                        }
+                        
                         pdf.setTextColor(codeColor.r, codeColor.g, codeColor.b);
                         pdf.setFont('courier', 'normal');
                         pdf.setFontSize(10);
@@ -859,6 +970,17 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
                         
                         // Reset y position to top margin
                         yPosition = standardMargin.top;
+                        
+                        // Reset font and text color to ensure consistency on new pages
+                        pdf.setFontSize(11); // Standard paragraph text size
+                        pdf.setFont('helvetica', 'normal'); // Standard font
+                        
+                        // Explicitly reset text color to main content color (not secondary text color)
+                        if (theme.text === '#ffffff' || theme.text === '#fff') {
+                            pdf.setTextColor(255, 255, 255); // White for dark mode
+                        } else {
+                            pdf.setTextColor(0, 0, 0); // Black for light mode
+                        }
                     }
                     
                     try {
@@ -959,6 +1081,17 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
                             
                             // Reset y position to top margin
                             yPosition = standardMargin.top;
+                            
+                            // Reset font and text color to ensure consistency on new pages
+                            pdf.setFontSize(11); // Standard paragraph text size
+                            pdf.setFont('helvetica', 'normal'); // Standard font
+                            
+                            // Explicitly reset text color to main content color (not secondary text color)
+                            if (theme.text === '#ffffff' || theme.text === '#fff') {
+                                pdf.setTextColor(255, 255, 255); // White for dark mode
+                            } else {
+                                pdf.setTextColor(0, 0, 0); // Black for light mode
+                            }
                         }
                         
                         pdf.text(currentLine, margin.left, yPosition);
@@ -986,6 +1119,17 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
                         
                         // Reset y position to top margin
                         yPosition = standardMargin.top;
+                        
+                        // Reset font and text color to ensure consistency on new pages
+                        pdf.setFontSize(11); // Standard paragraph text size
+                        pdf.setFont('helvetica', 'normal'); // Standard font
+                        
+                        // Explicitly reset text color to main content color (not secondary text color)
+                        if (theme.text === '#ffffff' || theme.text === '#fff') {
+                            pdf.setTextColor(255, 255, 255); // White for dark mode
+                        } else {
+                            pdf.setTextColor(0, 0, 0); // Black for light mode
+                        }
                     }
                     
                     pdf.text(currentLine, margin.left, yPosition);
@@ -1004,6 +1148,14 @@ PDFExport.exportCurrentNote = async (mode = 'dark') => {
         
         // Add page number to the last page
         addPageNumber(pdf, currentPage, theme);
+        
+        // Add logo to each page if requested
+        if (includeLogo) {
+            for (let i = 1; i <= currentPage; i++) {
+                pdf.setPage(i);
+                await addLogo(pdf, theme);
+            }
+        }
         
         // Generate PDF and trigger download
         const pdfBlob = pdf.output('blob');
