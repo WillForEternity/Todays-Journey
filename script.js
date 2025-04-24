@@ -572,8 +572,8 @@ CalendarApp.createTaskListItem = (task, displayDate) => {
     li.appendChild(contentWrapper);
     li.appendChild(actionsDiv);
 
-    // Add color picker for timeless tasks (not recurring instances and not completed)
-    if (!task.time && !isInstance && !completedState) {
+    // Add color picker for timeless tasks (not completed)
+    if (!task.time && !completedState) {
         const colorPicker = CalendarApp.createColorPicker(task.id, task.originalDate, task.customColor || 'default');
         li.appendChild(colorPicker);
         
