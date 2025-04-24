@@ -47,6 +47,7 @@ CalendarApp.state = {
     instanceCompletions: {}, // per-date overrides for recurring task completions
     activeColorPicker: null, // Tracks the active color picker
     taskColor: null, // Tracks the selected color for a task
+    deletingTaskId: null, // Tracks the ID of the task being deleted to prevent double execution
 };
 
 // --- Calendar Configuration ---
@@ -479,14 +480,28 @@ CalendarApp.renderImportantTasks = () => {
  * @returns {HTMLLIElement} The created list item element.
  */
 CalendarApp.createTaskListItem = (task, displayDate) => {
-     const li = document.createElement('li');
-     const isInstance = !!task.isInstance;
-     const completedState = isInstance
-        ? (CalendarApp.state.instanceCompletions[displayDate]?.[task.id] ?? false)
-        : !!task.completed;
+    const li = document.createElement('li');
+    const isInstance = task.originalDate !== displayDate;
+    const completedState = isInstance
+       ? (CalendarApp.state.instanceCompletions[displayDate]?.[task.id] ?? false)
+       : !!task.completed;
+   
     li.classList.toggle('completed', completedState);
     li.classList.toggle('is-recurring-instance', isInstance);
     li.classList.toggle('timeless-task', !task.time);
+    
+    // Add slide-in animation class for newly created tasks
+    // We'll identify new tasks using the createdAt timestamp - if it's within the last second
+    const isNewTask = task.createdAt && (Date.now() - task.createdAt < 1000);
+    if (isNewTask) {
+        li.classList.add('slide-in');
+        // Remove the animation class after it completes to prevent it from replaying on DOM changes
+        setTimeout(() => {
+            if (li.parentElement) {
+                li.classList.remove('slide-in');
+            }
+        }, 500); // Updated to match the new 0.5s animation duration
+    }
     
     // Add custom color class if present and it's a timeless task
     if (!task.time && task.customColor) {
@@ -496,6 +511,11 @@ CalendarApp.createTaskListItem = (task, displayDate) => {
     li.dataset.taskId = task.id;
     li.dataset.originalDate = task.originalDate;
     li.dataset.displayDate = displayDate;
+
+    // If there's a custom color, use it for the border
+    if (task.customColor && task.customColor !== 'default') {
+        li.style.borderLeftColor = `var(--task-color-${task.customColor})`;
+    }
 
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'task-content-wrapper';
@@ -885,32 +905,44 @@ CalendarApp.toggleTaskCompletion = async (taskId, originalDate, instanceDate = o
  */
 CalendarApp.handleDeleteTask = (taskId, originalDate, displayDate) => {
     if (!CalendarApp.dom.taskList) return;
+    
+    // Prevent double execution if already deleting this task
+    if (CalendarApp.state.deletingTaskId === taskId) {
+        return;
+    }
+    CalendarApp.state.deletingTaskId = taskId;
+    
     // Find the specific LI instance in the currently displayed list
     const listItem = CalendarApp.dom.taskList.querySelector(`li[data-task-id="${taskId}"][data-original-date="${originalDate}"]`);
     const currentSelectedDate = CalendarApp.state.selectedDate;
 
-     // Animate only if the item is currently visible in the main list
-     if (listItem && displayDate === currentSelectedDate) {
-         listItem.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-         listItem.style.opacity = '0';
-         listItem.style.transform = 'translateX(20px)';
-         listItem.addEventListener('transitionend', () => {
-             // Check parentElement as removeTaskData might have already run via fallback
-             if (listItem.parentElement) {
-                 CalendarApp.removeTaskData(taskId, originalDate);
-             }
-         }, { once: true });
-         // Fallback if transitionend doesn't fire reliably
-         setTimeout(() => {
-              if (listItem.parentElement) {
-                  console.warn("TransitionEnd fallback triggered for task delete animation.");
-                  CalendarApp.removeTaskData(taskId, originalDate);
-              }
-          }, 350);
-     } else {
-         // If item not visible (e.g., deleting a recurring task instance not shown today), remove data directly
-         CalendarApp.removeTaskData(taskId, originalDate);
-     }
+    // Animate only if the item is currently visible in the main list
+    if (listItem && displayDate === currentSelectedDate) {
+        // Apply the more dramatic slide-out animation class
+        listItem.classList.add('slide-out');
+        
+        // Listen for animation end
+        listItem.addEventListener('animationend', () => {
+            // Check parentElement as removeTaskData might have already run via fallback
+            if (listItem.parentElement) {
+                CalendarApp.removeTaskData(taskId, originalDate);
+            }
+            CalendarApp.state.deletingTaskId = null;
+        }, { once: true });
+        
+        // Fallback if animation end doesn't fire reliably
+        setTimeout(() => {
+            if (listItem.parentElement) {
+                console.warn("AnimationEnd fallback triggered for task delete animation.");
+                CalendarApp.removeTaskData(taskId, originalDate);
+            }
+            CalendarApp.state.deletingTaskId = null;
+        }, 650); // Increased to match the longer 0.6s animation duration
+    } else {
+        // If item not visible (e.g., deleting a recurring task instance not shown today), remove data directly
+        CalendarApp.removeTaskData(taskId, originalDate);
+        CalendarApp.state.deletingTaskId = null;
+    }
 };
 
 /**
