@@ -3,12 +3,22 @@
 /* shared components (inputs, modals, buttons, empty states), animations. */
 
 :root {
+    /* Dark Theme (Default) */
     --bg-color: #171717;
     --ui-bg-color: #131313;
     --input-bg-color: #3c3c3c;
     --hover-bg-color: #37373d;
     --selected-bg-color: #4a4a4a; /* Added for selection */
     --text-color: #d4d4d4;
+    
+    /* Light Theme Variables (will be applied via JS) */
+    --light-bg-color: #f5f5f5;
+    --light-ui-bg-color: #ffffff;
+    --light-input-bg-color: #e8e8e8;
+    --light-hover-bg-color: #dcdcdc;
+    --light-selected-bg-color: #d0d0d0;
+    --light-text-color: #333333;
+    
     /* --- Deep Turquoise Accent --- */
     --accent-color: #04a49f; /* Deep Turquoise */
     --button-color: var(--accent-color);
@@ -132,34 +142,40 @@ body {
 .gear-emoji {
     font-size: 2.75em;
     display: inline-block;
-    transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    transition: transform 0.75s cubic-bezier(0.75, -0.75, 0.5, 1.50);
     line-height: 0.8;
 }
 
 /* View Toggle Button Styles */
 .view-toggle-button {
     background: none;
-    border: 1px solid transparent;
+    border: none;
     color: var(--text-color);
     cursor: pointer;
     padding: 8px;
     margin-right: 15px;
     border-radius: var(--border-radius);
-    transition: background-color var(--transition-speed) ease, border-color var(--transition-speed) ease;
-    line-height: 0; /* Helps align icon vertically */
+    transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    line-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+
 .view-toggle-button:hover {
-    background-color: var(--hover-bg-color);
+    background-color: transparent;
+    transform: scale(1.15);
 }
+
 .view-toggle-button:focus {
     outline: none;
-    border-color: var(--accent-color);
+    border-color: transparent;
 }
+
 .view-toggle-button svg {
-    width: 24px;
-    height: 24px;
+    width: 27px;
+    height: 27px;
     stroke-width: 2;
-    vertical-align: middle; /* Better alignment */
 }
 
 /* --- Shared Input Area Styles --- */
@@ -291,6 +307,97 @@ body {
     color: #888;
     padding: 20px;
     font-style: italic;
+}
+
+.settings-group {
+    margin-bottom: 20px;
+}
+
+.settings-group h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--accent-color);
+    font-size: 1em;
+    font-weight: 500;
+}
+
+.theme-toggle-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+}
+
+.theme-icon {
+    font-size: 1.5em;
+    margin: 0 15px;
+}
+
+.theme-icon.moon {
+    color: #9ab7d3;
+}
+
+.theme-icon.sun {
+    color: #ffcc00;
+}
+
+/* The switch - the box around the slider */
+.theme-toggle {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 30px;
+}
+
+/* Hide default HTML checkbox */
+.theme-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* The slider */
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #333;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: var(--accent-color);
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px var(--accent-color);
+}
+
+input:checked + .slider:before {
+    transform: translateX(30px);
+}
+
+/* Rounded sliders */
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
 }
 
 /* --- Modal Styles (Shared Structure) --- */
