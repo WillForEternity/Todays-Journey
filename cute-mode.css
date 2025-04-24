@@ -19,6 +19,10 @@ body.cute-mode {
     
     /* Calendar gradient color for task density */
     --task-gradient-base-rgb: var(--task-gradient-pink-rgb);
+    
+    /* Folder navigation in Notes view */
+    --folder-active-color: var(--accent-color-pink); /* Color for active/selected folder */
+    --folder-selected-bg: rgba(255, 128, 171, 0.15); /* Background for selected folder */
 }
 
 /* Calendar day specific overrides */
