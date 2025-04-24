@@ -853,7 +853,23 @@ CalendarApp.toggleTaskCompletion = async (taskId, originalDate, instanceDate = o
         if (isBeingCompleted) {
             const listItem = document.querySelector(`li[data-task-id="${taskId}"][data-original-date="${originalDate}"]`);
             if (listItem) {
+                // Immediately hide any color picker associated with this task
+                const colorPicker = listItem.querySelector('.color-picker');
+                const colorPickerDivider = listItem.querySelector('.color-picker-divider');
+                
+                if (colorPicker) {
+                    // Add fade-out animation
+                    colorPicker.style.transition = 'opacity 0.2s ease-out';
+                    colorPicker.style.opacity = '0';
+                }
+                if (colorPickerDivider) {
+                    colorPickerDivider.style.transition = 'opacity 0.2s ease-out';
+                    colorPickerDivider.style.opacity = '0';
+                }
+                
+                // Add the completed and animation classes to start the slashthrough
                 listItem.classList.add('completed', 'animate-slash');
+                
                 // Allow animation to play before re-rendering
                 setTimeout(() => {
                     CalendarApp.renderTaskList();
@@ -880,7 +896,23 @@ CalendarApp.toggleTaskCompletion = async (taskId, originalDate, instanceDate = o
         if (isBeingCompleted) {
             const listItem = document.querySelector(`li[data-task-id="${taskId}"][data-original-date="${originalDate}"]`);
             if (listItem) {
+                // Immediately hide any color picker associated with this task
+                const colorPicker = listItem.querySelector('.color-picker');
+                const colorPickerDivider = listItem.querySelector('.color-picker-divider');
+                
+                if (colorPicker) {
+                    // Add fade-out animation
+                    colorPicker.style.transition = 'opacity 0.2s ease-out';
+                    colorPicker.style.opacity = '0';
+                }
+                if (colorPickerDivider) {
+                    colorPickerDivider.style.transition = 'opacity 0.2s ease-out';
+                    colorPickerDivider.style.opacity = '0';
+                }
+                
+                // Add the completed and animation classes to start the slashthrough
                 listItem.classList.add('completed', 'animate-slash');
+                
                 // Allow animation to play before re-rendering
                 setTimeout(() => {
                     try {
