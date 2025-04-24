@@ -17,12 +17,12 @@
 
     <!-- App Header with Toggle -->
     <div class="app-header">
-        <button id="viewToggleBtn" class="view-toggle-button" title="Switch View">
+        <button id="viewToggleBtn" class="view-toggle-button">
             <!-- Icon will be set by JS -->
             <i data-feather="book"></i> <!-- Initial icon guess -->
         </button>
         <h1 id="appTitle"></h1> <!-- Set initial text by JS -->
-        <button id="settingsBtn" class="settings-button" title="Settings">
+        <button id="settingsBtn" class="settings-button">
             <span class="gear-emoji">⚙️</span>
         </button>
     </div>
@@ -37,7 +37,7 @@
             <!-- [Calendar] Input Area -->
             <div class="input-area" id="calendarInputArea">
                 <input type="text" id="taskInput" placeholder="Add a task for the selected day...">
-                <label class="important-toggle" title="Mark as important">
+                <label class="important-toggle">
                     <input type="checkbox" id="importantCheckbox">
                     <span class="star">☆</span>
                 </label>
@@ -73,16 +73,16 @@
         <div class="notes-sidebar">
             <!-- Add Folder Actions / Input Area -->
             <div class="notes-sidebar-actions">
-                 <button id="addRootFolderBtn" class="action-button" title="Add Root Folder">
+                 <button id="addRootFolderBtn" class="action-button">
                      <i data-feather="folder-plus"></i> New Folder
                  </button>
                  <!-- Folder Input Area -->
                  <div class="input-area folder-input-area" id="addFolderInputArea" style="display: none;">
                     <input type="text" id="newFolderNameInput" placeholder="Folder name...">
-                    <button id="confirmAddFolderBtn" title="Save Folder (Enter)">
+                    <button id="confirmAddFolderBtn">
                         <i data-feather="check"></i>
                     </button>
-                    <button id="cancelAddFolderBtn" title="Cancel (Esc)">
+                    <button id="cancelAddFolderBtn">
                         <i data-feather="x"></i>
                     </button>
                 </div>
@@ -96,7 +96,7 @@
             <div class="notes-list-panel">
                 <div class="notes-list-header">
                     <h2 id="notesListTitle">Notes</h2>
-                    <button id="addNoteBtn" class="action-button" title="Add Note to Selected Folder" disabled>
+                    <button id="addNoteBtn" class="action-button" disabled>
                         <i data-feather="file-plus"></i> New Note
                     </button>
                 </div>
@@ -120,9 +120,15 @@
                     <div id="notePreview" class="note-preview" style="display: none;"></div>
                     <div class="note-editor-actions">
                          <span id="noteStatus"></span>
-                         <button id="togglePreviewBtn" class="action-button" title="Toggle Preview Mode"><i data-feather="eye"></i> Preview</button>
-                         <button id="saveNoteBtn" class="action-button" title="Save Note (Ctrl+S)"><i data-feather="save"></i> Save</button>
-                         <button id="deleteNoteBtn" class="action-button" title="Delete Note"><i data-feather="trash-2"></i> Delete</button>
+                         <button id="togglePreviewBtn" class="action-button">
+                            <i data-feather="eye"></i> Preview
+                        </button>
+                         <button id="saveNoteBtn" class="action-button">
+                            <i data-feather="save"></i> Save
+                        </button>
+                         <button id="deleteNoteBtn" class="action-button">
+                            <i data-feather="trash-2"></i> Delete
+                        </button>
                     </div>
                 </div>
             </div>
