@@ -107,27 +107,27 @@ body {
 /* Settings Button Styles */
 .settings-button {
     background: none;
-    border: 1px solid transparent;
+    border: none;
     color: var(--text-color);
     cursor: pointer;
     padding: 8px;
     border-radius: var(--border-radius);
-    transition: background-color var(--transition-speed) ease, border-color var(--transition-speed) ease;
+    transition: transform var(--transition-speed) ease;
     line-height: 0;
     margin-left: 15px;
 }
 
 .settings-button:hover {
-    background-color: var(--hover-bg-color);
+    background-color: transparent;
 }
 
 .settings-button:focus {
     outline: none;
-    border-color: var(--accent-color);
+    border-color: transparent;
 }
 
 .gear-emoji {
-    font-size: 1.4em;
+    font-size: 2em;
     display: inline-block;
     transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
 }
