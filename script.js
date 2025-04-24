@@ -386,7 +386,7 @@ CalendarApp.renderTaskList = () => {
     let titleText = '';
     const todayString = CalendarApp.getTodayDateString();
     if (dateString === todayString) {
-        titleText = "Today's Journey";
+        titleText = "[ Today's Journey ]";
     } else {
         const parsedDate = CalendarApp.parseDateString(dateString);
         if (parsedDate) {

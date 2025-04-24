@@ -363,7 +363,7 @@ App.setView = (viewName, skipFocus = false) => {
         // Set title when switching TO notes.
         // Calendar title is updated by its own render function.
         if (isNotes) {
-            App.dom.appTitle.textContent = 'Notes';
+            App.dom.appTitle.textContent = '[ Notes ]';
         }
         // Calendar title is set dynamically by CalendarApp.renderTaskList when view becomes active
     }
