@@ -1,0 +1,38 @@
+/* Cute Mode Styles
+ * This file contains styles for the cute mode toggle feature
+ * that changes accent colors from turquoise to pink
+ */
+
+/* Base cute mode colors */
+:root {
+    /* Pink accent color (defined in base-styles.css) */
+    /* --accent-color-pink: #ff80ab; */
+    
+    /* Define pink variants for the calendar gradient */
+    --task-gradient-pink-rgb: 255, 128, 171; /* RGB values for pink accent */
+}
+
+/* When cute mode is active, these styles apply */
+body.cute-mode {
+    /* Core accent color change - defined in base-styles.css */
+    /* --accent-color: var(--accent-color-pink); */
+    
+    /* Calendar gradient color for task density */
+    --task-gradient-base-rgb: var(--task-gradient-pink-rgb);
+}
+
+/* Calendar day specific overrides */
+body.cute-mode .calendar-day.today:not(.selected-day) {
+    border-color: var(--accent-color-pink);
+    color: var(--accent-color-pink);
+}
+
+/* Style the "Add" button in cute mode */
+body.cute-mode .input-area button {
+    background-color: var(--accent-color-pink);
+}
+
+/* Explicit override for Add button hover state in cute mode */
+body.cute-mode .input-area button:hover { 
+    background-color: #ff4081; /* Slightly darker pink for hover */
+}
