@@ -10,6 +10,15 @@
     
     /* Define pink variants for the calendar gradient */
     --task-gradient-pink-rgb: 255, 128, 171; /* RGB values for pink accent */
+    
+    /* Define pastel color palette for cute mode */
+    --task-color-cute-default: #aae6aa; /* Pastel mint green */
+    --task-color-cute-teal: #a0e4ff; /* Pastel sky blue */
+    --task-color-cute-purple: #d6d6ff; /* Pastel lavender */
+    --task-color-cute-blue: #b5c4ff; /* Pastel periwinkle */
+    --task-color-cute-coral: #ffb5d3; /* Pastel pink */
+    --task-color-cute-amber: #e0b1ff; /* Pastel lilac */
+    --task-color-cute-forest: #b8ebc3; /* Pastel sage */
 }
 
 /* When cute mode is active, these styles apply */
@@ -27,6 +36,15 @@ body.cute-mode {
     /* Button color (defined to match accent color) */
     --button-color: var(--accent-color-pink);
     --button-hover-color: #ff4081; /* Slightly darker pink for hover */
+    
+    /* Override task colors with pastel variants for cute mode */
+    --task-color-default: var(--task-color-cute-default);
+    --task-color-teal: var(--task-color-cute-teal);
+    --task-color-purple: var(--task-color-cute-purple);
+    --task-color-blue: var(--task-color-cute-blue);
+    --task-color-coral: var(--task-color-cute-coral);
+    --task-color-amber: var(--task-color-cute-amber);
+    --task-color-forest: var(--task-color-cute-forest);
 }
 
 /* Calendar day specific overrides */
