@@ -115,6 +115,9 @@ body {
     transition: transform var(--transition-speed) ease;
     line-height: 0;
     margin-left: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .settings-button:hover {
@@ -127,9 +130,10 @@ body {
 }
 
 .gear-emoji {
-    font-size: 2em;
+    font-size: 2.75em;
     display: inline-block;
     transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    line-height: 0.8;
 }
 
 /* View Toggle Button Styles */
