@@ -512,8 +512,8 @@ CalendarApp.createTaskListItem = (task, displayDate) => {
     li.dataset.originalDate = task.originalDate;
     li.dataset.displayDate = displayDate;
 
-    // If there's a custom color, use it for the border
-    if (task.customColor && task.customColor !== 'default') {
+    // If there's a custom color, use it for the border (but not for completed tasks)
+    if (task.customColor && task.customColor !== 'default' && !completedState) {
         li.style.borderLeftColor = `var(--task-color-${task.customColor})`;
     }
 
@@ -570,8 +570,8 @@ CalendarApp.createTaskListItem = (task, displayDate) => {
     li.appendChild(contentWrapper);
     li.appendChild(actionsDiv);
 
-    // Add color picker for timeless tasks (not recurring instances)
-    if (!task.time && !isInstance) {
+    // Add color picker for timeless tasks (not recurring instances and not completed)
+    if (!task.time && !isInstance && !completedState) {
         const colorPicker = CalendarApp.createColorPicker(task.id, task.originalDate, task.customColor || 'default');
         li.appendChild(colorPicker);
         
@@ -582,6 +582,9 @@ CalendarApp.createTaskListItem = (task, displayDate) => {
         
         // Add hover/touch handler for showing color picker
         li.addEventListener('mouseenter', () => {
+            // Don't show color picker if task is completed
+            if (li.classList.contains('completed')) return;
+            
             // Close any other open color pickers
             if (CalendarApp.state.activeColorPicker && 
                 CalendarApp.state.activeColorPicker !== colorPicker) {

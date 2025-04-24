@@ -119,7 +119,7 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
 /* Completed task style */
 #taskList li.completed,
 #importantList li.completed {
-    border-left-color: var(--completed-border-color);
+    border-left-color: var(--completed-border-color) !important; /* Force grey border regardless of custom color */
     background-color: #2a2a2d;
     position: relative; /* Ensure position relative for the absolute pseudo-element */
 }
@@ -133,7 +133,8 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
     background-color: rgba(110, 110, 110, 0.9);
     top: 50%;
     left: 4px;
-    right: 4px;
+    /* Stop before the task actions and icons */
+    right: 80px;
     width: auto;
     transform: scaleX(0);
     transform-origin: left center;

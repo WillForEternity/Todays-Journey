@@ -321,7 +321,7 @@ body {
     }
     100% { 
         opacity: 0; 
-        transform: translateX(150px) rotate(3deg) scale(0.95);
+        transform: translateX(500px) rotate(3deg) scale(0.95);
     }
 }
 
