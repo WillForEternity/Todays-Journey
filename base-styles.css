@@ -299,14 +299,16 @@ body {
 
 /* Settings modal specific styles */
 .settings-modal {
-    min-width: 400px;
+    min-width: 500px; /* Significantly increased from 420px */
+    width: 60%; /* Make it take up a percentage of the screen */
+    max-width: 650px; /* Set a maximum width */
+    padding: 40px 45px; /* Significantly larger padding */
+    transform: scale(1.1); /* Make the entire modal larger */
 }
 
-.settings-placeholder {
-    text-align: center;
-    color: #888;
-    padding: 20px;
-    font-style: italic;
+.settings-modal h3 {
+    font-size: 2em; /* Much larger heading */
+    margin-bottom: 35px; /* More space below heading */
 }
 
 .settings-group {
@@ -315,16 +317,15 @@ body {
 
 .settings-group-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px;
+    align-items: center;
+    padding-bottom: 8px;
 }
 
-.settings-group h4 {
-    margin: 0;
-    color: var(--text-color);
-    font-size: 1em;
+.settings-group-header h4 {
+    font-size: 1.3em; /* Larger subheading */
     font-weight: 500;
+    color: var(--text-color);
 }
 
 .theme-toggle-container {
@@ -334,16 +335,16 @@ body {
 }
 
 .theme-icon {
-    font-size: 1.25em;
-    margin: 0 5px;
+    font-size: 2.2em; /* Significantly larger emoji icons (was 1.5em) */
+    margin: 0 12px; /* More space around icons */
 }
 
 /* The switch - the box around the slider */
 .theme-toggle {
     position: relative;
     display: inline-block;
-    width: 46px;
-    height: 24px;
+    width: 60px; /* Increased from 46px */
+    height: 30px; /* Increased from 24px */
 }
 
 /* Hide default HTML checkbox */
@@ -368,10 +369,10 @@ body {
 .slider:before {
     position: absolute;
     content: "";
-    height: 18px;
-    width: 18px;
-    left: 3px;
-    bottom: 3px;
+    height: 22px; /* Increased from 18px */
+    width: 22px; /* Increased from 18px */
+    left: 4px; /* Adjusted for larger size */
+    bottom: 4px; /* Adjusted for larger size */
     background-color: white;
     transition: .4s;
 }
@@ -385,7 +386,7 @@ input:focus + .slider {
 }
 
 input:checked + .slider:before {
-    transform: translateX(22px);
+    transform: translateX(30px); /* Adjusted for larger size (was 22px) */
 }
 
 /* Rounded sliders */

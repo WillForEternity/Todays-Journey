@@ -437,8 +437,9 @@ App.initTheme = () => {
 /**
  * Switches the application view between 'calendar' and 'notes'.
  * @param {'calendar' | 'notes'} viewName - The name of the view to switch to.
+ * @param {boolean} [skipFocus=false] - If true, skips auto-focusing on input fields.
  */
-App.setView = (viewName) => {
+App.setView = (viewName, skipFocus = false) => {
     if (viewName !== 'calendar' && viewName !== 'notes') {
         console.warn(`Invalid view name: ${viewName}. Defaulting to calendar.`);
         viewName = 'calendar';
@@ -493,36 +494,42 @@ App.setView = (viewName) => {
     if (isCalendar && typeof CalendarApp !== 'undefined' && CalendarApp.state?.isInitialized) {
          // Render the calendar view which also updates the H1 title via renderTaskList
          CalendarApp.renderCurrentCalendarView();
-         // Focus task input, slight delay can help ensure element is focusable after display change
-         setTimeout(() => App.dom.taskInput?.focus(), 0);
+         
+         // Only focus if skipFocus is false
+         if (!skipFocus && App.dom.taskInput) {
+             // Focus task input, slight delay can help ensure element is focusable after display change
+             setTimeout(() => App.dom.taskInput.focus(), 0);
+         }
     } else if (isNotes && typeof NotesApp !== 'undefined' && NotesApp.state?.isInitialized) {
          // Notes title is already set. Consider if full render needed every time.
          // NotesApp.renderFullNotesView();
 
-         // Focus logic depends on notes state
-         let focused = false;
-         // If adding folder input is visible, focus that
-         if (NotesApp.state.isAddingFolder && App.dom.newFolderNameInput) {
-              setTimeout(() => App.dom.newFolderNameInput.focus(), 0);
-              focused = true;
+         // Only apply focus logic if skipFocus is false
+         if (!skipFocus) {
+             let focused = false;
+             // If adding folder input is visible, focus that
+             if (NotesApp.state.isAddingFolder && App.dom.newFolderNameInput) {
+                  setTimeout(() => App.dom.newFolderNameInput.focus(), 0);
+                  focused = true;
+             }
+             // If no folder selected, focus Add Root Folder btn
+             else if (!NotesApp.state.selectedFolderId && App.dom.addRootFolderBtn) {
+                 setTimeout(() => App.dom.addRootFolderBtn.focus(), 0);
+                 focused = true;
+             }
+             // If folder selected, but no note, focus Add Note btn (if enabled)
+             else if (NotesApp.state.selectedFolderId && !NotesApp.state.selectedNoteId && App.dom.addNoteBtn && !App.dom.addNoteBtn.disabled) {
+                 setTimeout(() => App.dom.addNoteBtn.focus(), 0);
+                 focused = true;
+             }
+             // If note selected, focus title input
+             else if (NotesApp.state.selectedNoteId && App.dom.noteTitleInput) {
+                setTimeout(() => App.dom.noteTitleInput.focus(), 0);
+                 focused = true;
+             }
+             // Fallback focus? Maybe sidebar container?
+             // if (!focused) { setTimeout(() => NotesApp.dom.notesSidebar?.focus(), 0); }
          }
-         // If no folder selected, focus Add Root Folder btn
-         else if (!NotesApp.state.selectedFolderId && App.dom.addRootFolderBtn) {
-             setTimeout(() => App.dom.addRootFolderBtn.focus(), 0);
-             focused = true;
-         }
-         // If folder selected, but no note, focus Add Note btn (if enabled)
-         else if (NotesApp.state.selectedFolderId && !NotesApp.state.selectedNoteId && App.dom.addNoteBtn && !App.dom.addNoteBtn.disabled) {
-             setTimeout(() => App.dom.addNoteBtn.focus(), 0);
-             focused = true;
-         }
-         // If note selected, focus title input
-         else if (NotesApp.state.selectedNoteId && App.dom.noteTitleInput) {
-            setTimeout(() => App.dom.noteTitleInput.focus(), 0);
-             focused = true;
-         }
-          // Fallback focus? Maybe sidebar container?
-          // if (!focused) { setTimeout(() => NotesApp.dom.notesSidebar?.focus(), 0); }
     }
 
      // --- Save Last View ---
@@ -535,14 +542,15 @@ App.setView = (viewName) => {
 
 /**
  * Toggles between the 'calendar' and 'notes' views.
+ * @param {boolean} [skipFocus=true] - If true, skips auto-focusing on input fields.
  */
-App.toggleView = () => {
+App.toggleView = (skipFocus = true) => {
     // If notes view is active AND the folder input is shown, cancel adding first
     if (App.state.currentView === 'notes' && typeof NotesApp !== 'undefined' && NotesApp.state?.isAddingFolder) {
         NotesApp.hideAddFolderInput(false); // Hide without focusing trigger
     }
     // Then toggle the view
-    App.setView(App.state.currentView === 'calendar' ? 'notes' : 'calendar');
+    App.setView(App.state.currentView === 'calendar' ? 'notes' : 'calendar', skipFocus);
 };
 
 
@@ -594,7 +602,7 @@ App.init = async () => {
         }
 
         // Set the view (this will handle DOM classes, display, titles, icons, focus)
-        App.setView(lastView); // Important: Call setView *after* modules are initialized
+        App.setView(lastView, true); // Pass true for skipFocus to prevent auto-focusing on page load
         console.log(`Initial view set to: ${App.state.currentView}`);
 
 
