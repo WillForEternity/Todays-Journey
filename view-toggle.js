@@ -29,11 +29,6 @@ App.dom = {
     notesViewContainer: document.querySelector('.notes-app-container.notes-view'),
     // Modal overlay (referenced by calendar app)
     taskDetailsModal: document.getElementById('taskDetailsModal'),
-    // Settings elements
-    settingsBtn: document.getElementById('settingsBtn'),
-    settingsModal: document.getElementById('settingsModal'),
-    settingsCloseBtn: document.getElementById('settingsCloseBtn'),
-    themeToggle: document.getElementById('themeToggle'),
     // Key Input elements for focusing
     taskInput: document.getElementById('taskInput'), // Calendar
     addRootFolderBtn: document.getElementById('addRootFolderBtn'), // Notes
@@ -320,117 +315,10 @@ App.dbAction = (storeName, mode, action, data) => {
 
 
 // --- Settings Menu Functions ---
-
-/**
- * Opens the settings modal.
- */
-App.openSettings = () => {
-    const { settingsModal } = App.dom;
-    if (!settingsModal) return;
-    settingsModal.classList.add('visible');
-};
-
-/**
- * Closes the settings modal.
- */
-App.closeSettings = () => {
-    const { settingsModal } = App.dom;
-    if (!settingsModal) return;
-    settingsModal.classList.remove('visible');
-};
-
-/**
- * Handles the gear icon spin animation on mouse enter.
- */
-App.handleSettingsHoverIn = () => {
-    const gearEmoji = App.dom.settingsBtn?.querySelector('.gear-emoji');
-    if (gearEmoji) {
-        gearEmoji.style.transform = 'rotate(180deg)';
-    }
-};
-
-/**
- * Handles the gear icon spin animation on mouse leave.
- */
-App.handleSettingsHoverOut = () => {
-    const gearEmoji = App.dom.settingsBtn?.querySelector('.gear-emoji');
-    if (gearEmoji) {
-        gearEmoji.style.transform = 'rotate(0deg)';
-    }
-};
+// Moved to settings.js
 
 // --- Theme Management ---
-
-/**
- * Applies the selected theme (light or dark) to the application.
- * @param {boolean} isLightMode - Whether to apply light mode (true) or dark mode (false)
- */
-App.applyTheme = (isLightMode) => {
-    const root = document.documentElement;
-    
-    if (isLightMode) {
-        // Apply light theme
-        root.style.setProperty('--bg-color', 'var(--light-bg-color)');
-        root.style.setProperty('--ui-bg-color', 'var(--light-ui-bg-color)');
-        root.style.setProperty('--input-bg-color', 'var(--light-input-bg-color)');
-        root.style.setProperty('--hover-bg-color', 'var(--light-hover-bg-color)');
-        root.style.setProperty('--selected-bg-color', 'var(--light-selected-bg-color)');
-        root.style.setProperty('--text-color', 'var(--light-text-color)');
-    } else {
-        // Apply dark theme (reset to default values)
-        root.style.setProperty('--bg-color', '#171717');
-        root.style.setProperty('--ui-bg-color', '#131313');
-        root.style.setProperty('--input-bg-color', '#3c3c3c');
-        root.style.setProperty('--hover-bg-color', '#37373d');
-        root.style.setProperty('--selected-bg-color', '#4a4a4a');
-        root.style.setProperty('--text-color', '#d4d4d4');
-    }
-    
-    // Save theme preference
-    try {
-        localStorage.setItem('themeMode', isLightMode ? 'light' : 'dark');
-    } catch (e) {
-        console.warn("Could not save theme preference:", e);
-    }
-};
-
-/**
- * Toggles between light and dark themes.
- */
-App.toggleTheme = () => {
-    const isLightMode = App.dom.themeToggle.checked;
-    App.applyTheme(isLightMode);
-};
-
-/**
- * Initializes the theme based on saved preferences or system preference.
- */
-App.initTheme = () => {
-    let preferredTheme;
-    
-    // Try to load from localStorage
-    try {
-        preferredTheme = localStorage.getItem('themeMode');
-    } catch (e) {
-        console.warn("Could not read theme preference:", e);
-    }
-    
-    // If no saved preference, check system preference
-    if (!preferredTheme && window.matchMedia) {
-        preferredTheme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-    }
-    
-    // Default to dark if nothing else
-    if (!preferredTheme) {
-        preferredTheme = 'dark';
-    }
-    
-    // Set toggle state and apply theme
-    if (App.dom.themeToggle) {
-        App.dom.themeToggle.checked = preferredTheme === 'light';
-        App.applyTheme(preferredTheme === 'light');
-    }
-};
+// Moved to settings.js
 
 // --- View Switching Logic ---
 
@@ -609,28 +497,12 @@ App.init = async () => {
         // 4. Setup Global Event Listeners
         App.dom.viewToggleBtn?.addEventListener('click', App.toggleView);
 
-        // Setup settings button events
-        if (App.dom.settingsBtn) {
-            App.dom.settingsBtn.addEventListener('click', App.openSettings);
-            App.dom.settingsBtn.addEventListener('mouseenter', App.handleSettingsHoverIn);
-            App.dom.settingsBtn.addEventListener('mouseleave', App.handleSettingsHoverOut);
-        }
-        
-        if (App.dom.settingsCloseBtn) {
-            App.dom.settingsCloseBtn.addEventListener('click', App.closeSettings);
-        }
-        
-        if (App.dom.settingsModal) {
-            App.dom.settingsModal.addEventListener('click', (event) => {
-                if (event.target === App.dom.settingsModal) {
-                    App.closeSettings();
-                }
-            });
-        }
-        
-        // Setup theme toggle
-        if (App.dom.themeToggle) {
-            App.dom.themeToggle.addEventListener('change', App.toggleTheme);
+        // Initialize Settings module if available
+        if (typeof Settings !== 'undefined' && typeof Settings.init === 'function') {
+            Settings.init();
+            console.log("Settings module initialized");
+        } else {
+            console.warn("Settings module not found or init function missing");
         }
 
         document.addEventListener('keydown', (event) => {
@@ -639,10 +511,6 @@ App.init = async () => {
                 if (typeof CalendarApp !== 'undefined' && typeof CalendarApp.closeModal === 'function') {
                      CalendarApp.closeModal();
                 }
-            }
-            // Close Settings Modal on Escape
-            else if (event.key === 'Escape' && App.dom.settingsModal?.classList.contains('visible')) {
-                App.closeSettings();
             }
             // Close Notes Add Folder Input on Escape (Global fallback)
              else if (event.key === 'Escape' && App.state.currentView === 'notes' && typeof NotesApp !== 'undefined' && NotesApp.state?.isAddingFolder) {
@@ -661,9 +529,6 @@ App.init = async () => {
 
         // 5. Initial Icon Render (already done by setView)
         // App.refreshIcons(); - Called within setView
-
-        // Initialize theme
-        App.initTheme();
 
         console.log("Application initialization complete.");
 
