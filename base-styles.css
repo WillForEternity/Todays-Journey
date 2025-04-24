@@ -3,8 +3,8 @@
 /* shared components (inputs, modals, buttons, empty states), animations. */
 
 :root {
-    --bg-color: #1e1e1e;
-    --ui-bg-color: #1a1a1a;
+    --bg-color: #171717;
+    --ui-bg-color: #131313;
     --input-bg-color: #3c3c3c;
     --hover-bg-color: #37373d;
     --selected-bg-color: #4a4a4a; /* Added for selection */

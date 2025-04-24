@@ -607,22 +607,15 @@ CalendarApp.createImportantTaskListItem = (taskInfo) => {
 
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'task-content-wrapper';
-    if (taskInfo.time) {
-        const timeSpan = document.createElement('span');
-        timeSpan.className = 'task-time';
-        timeSpan.textContent = taskInfo.time;
-        contentWrapper.appendChild(timeSpan);
-    }
-    const textSpan = document.createElement('span');
-    textSpan.className = 'task-text';
-    textSpan.textContent = taskInfo.text;
-    contentWrapper.appendChild(textSpan);
-    if (taskInfo.location) {
-        const locSpan = document.createElement('span');
-        locSpan.className = 'task-location';
-        locSpan.textContent = taskInfo.location;
-        contentWrapper.appendChild(locSpan);
-    }
+
+    const taskSpan = document.createElement('span');
+    taskSpan.className = 'task-text';
+    taskSpan.textContent = taskInfo.text;
+    contentWrapper.appendChild(taskSpan);
+    
+    // Time badge intentionally removed from important tasks
+    // Location is intentionally removed from important tasks
+    
     const dateSpan = document.createElement('span');
     dateSpan.className = 'task-date';
     const parsedDate = CalendarApp.parseDateString(taskInfo.originalDate);
