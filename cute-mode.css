@@ -11,14 +11,14 @@
     /* Define pink variants for the calendar gradient */
     --task-gradient-pink-rgb: 255, 128, 171; /* RGB values for pink accent */
     
-    /* Define pastel color palette for cute mode */
-    --task-color-cute-default: #aae6aa; /* Pastel mint green */
-    --task-color-cute-teal: #a0e4ff; /* Pastel sky blue */
-    --task-color-cute-purple: #d6d6ff; /* Pastel lavender */
-    --task-color-cute-blue: #b5c4ff; /* Pastel periwinkle */
-    --task-color-cute-coral: #ffb5d3; /* Pastel pink */
-    --task-color-cute-amber: #e0b1ff; /* Pastel lilac */
-    --task-color-cute-forest: #b8ebc3; /* Pastel sage */
+    /* Define distinct pastel color palette for cute mode */
+    --task-color-cute-default: #98e698; /* Pastel mint green */
+    --task-color-cute-teal: #7cddff; /* Pastel cyan */
+    --task-color-cute-purple: #c4a0ff; /* Pastel purple */
+    --task-color-cute-blue: #96b5ff; /* Pastel blue */
+    --task-color-cute-coral: #ff9fcd; /* Pastel coral pink */
+    --task-color-cute-amber: #ffcf86; /* Pastel amber/peach */
+    --task-color-cute-forest: #a8e6cf; /* Pastel seafoam */
 }
 
 /* When cute mode is active, these styles apply */
