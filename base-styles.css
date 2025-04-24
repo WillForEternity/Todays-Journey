@@ -21,6 +21,7 @@
     
     /* --- Deep Turquoise Accent --- */
     --accent-color: #04a49f; /* Deep Turquoise */
+    --accent-color-pink: #ff80ab; /* Cute mode accent color - pink */
     --button-color: var(--accent-color);
     --button-hover-color: #03c4bd; /* Lighter shade for hover */
     /* --- End Accent --- */
@@ -142,7 +143,7 @@ body {
 .gear-emoji {
     font-size: 2.75em;
     display: inline-block;
-    transition: transform 0.75s cubic-bezier(0.75, -0.75, 0.5, 1.50);
+    transition: transform 0.75s cubic-bezier(0.50, -0.75, 0.5, 1.50);
     line-height: 0.8;
 }
 
@@ -362,6 +363,16 @@ body {
     animation: bounce 1s ease;
 }
 
+.style-icon {
+    font-size: 2.2em; /* Match size with theme icons */
+    margin: 0 12px; /* Space around icons */
+    transition: transform 0.3s ease; /* Smooth transition for size change */
+}
+
+.style-icon-active {
+    animation: bounce 1s ease;
+}
+
 /* Settings modal specific styles */
 .settings-modal {
     min-width: 500px; /* Significantly increased from 420px */
@@ -385,6 +396,33 @@ body {
     justify-content: space-between;
     align-items: center;
     padding-bottom: 8px;
+    position: relative; /* For absolute positioning of the connector line */
+}
+
+/* Add the connector line between Theme text and emoji */
+.settings-group-header::after {
+    content: '';
+    position: absolute;
+    height: 1px;
+    background-color: var(--text-color); /* Same color as the Theme text */
+    top: 50%;
+    right: 200px; /* Position to almost reach the zombie emoji */
+    width: 540px; /* Adjust width as needed */
+    opacity: 0.6; /* Subtle appearance */
+    z-index: 1;
+}
+
+/* Add the connector line between Style text and emoji */
+.settings-group:nth-child(2) .settings-group-header::after {
+    content: '';
+    position: absolute;
+    height: 1px;
+    background-color: var(--text-color);
+    top: 50%;
+    right: 200px; 
+    width: 540px;
+    opacity: 0.6;
+    z-index: 1;
 }
 
 .settings-group-header h4 {
@@ -542,3 +580,8 @@ input:checked + .slider:before {
 .modal-button-confirm:hover { background-color: var(--button-hover-color); }
 .modal-button-cancel { background-color: var(--cancel-button-color); color: #eee; }
 .modal-button-cancel:hover { background-color: var(--cancel-button-hover-color); color: #fff; }
+
+/* For bodies with cute mode active */
+body.cute-mode {
+    --accent-color: var(--accent-color-pink);
+}

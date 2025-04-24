@@ -7,7 +7,8 @@ Settings.dom = {
     settingsBtn: document.getElementById('settingsBtn'),
     settingsModal: document.getElementById('settingsModal'),
     settingsCloseBtn: document.getElementById('settingsCloseBtn'),
-    themeToggle: document.getElementById('themeToggle')
+    themeToggle: document.getElementById('themeToggle'),
+    cuteToggle: document.getElementById('cuteToggle')
 };
 
 // --- Core Settings Functions ---
@@ -186,6 +187,104 @@ Settings.initTheme = () => {
     }
 };
 
+// --- Cute Mode Management ---
+
+/**
+ * Toggles the cute mode between on and off.
+ */
+Settings.toggleCuteMode = () => {
+    const { cuteToggle } = Settings.dom;
+    if (!cuteToggle) return;
+    
+    const isCuteMode = cuteToggle.checked;
+    Settings.applyCuteMode(isCuteMode);
+    
+    // Save preference to localStorage
+    try {
+        localStorage.setItem('cuteMode', isCuteMode ? 'true' : 'false');
+    } catch (e) {
+        console.warn("Could not save cute mode preference to localStorage:", e);
+    }
+    
+    // Apply bounce animation to the active emoji
+    const defaultIcon = document.querySelector('.style-icon.default');
+    const cuteIcon = document.querySelector('.style-icon.cute');
+    
+    if (defaultIcon && cuteIcon) {
+        // First remove any existing animation classes
+        defaultIcon.classList.remove('style-icon-active');
+        cuteIcon.classList.remove('style-icon-active');
+        
+        // Then add the animation class to the active emoji
+        const activeIcon = isCuteMode ? cuteIcon : defaultIcon;
+        
+        // Need to force a reflow to restart animation
+        void activeIcon.offsetWidth;
+        activeIcon.classList.add('style-icon-active');
+    }
+};
+
+/**
+ * Applies the cute mode setting.
+ * @param {boolean} isCuteMode - Whether cute mode should be enabled.
+ */
+Settings.applyCuteMode = (isCuteMode) => {
+    const root = document.documentElement;
+    
+    // Toggle the body class for cute mode
+    document.body.classList.toggle('cute-mode', isCuteMode);
+    
+    // Update style emoji sizes
+    const defaultEmoji = document.querySelector('.style-icon.default');
+    const cuteEmoji = document.querySelector('.style-icon.cute');
+    
+    if (defaultEmoji && cuteEmoji) {
+        if (isCuteMode) {
+            // Cute mode active - make cute emoji larger
+            defaultEmoji.style.transform = 'scale(1)';
+            cuteEmoji.style.transform = 'scale(1.3)';
+        } else {
+            // Default mode active - make default emoji larger
+            defaultEmoji.style.transform = 'scale(1.3)';
+            cuteEmoji.style.transform = 'scale(1)';
+        }
+    }
+};
+
+/**
+ * Initializes the cute mode setting from localStorage.
+ */
+Settings.initCuteMode = () => {
+    const { cuteToggle } = Settings.dom;
+    if (!cuteToggle) return;
+    
+    // Get saved preference from localStorage
+    let isCuteMode = false;
+    try {
+        isCuteMode = localStorage.getItem('cuteMode') === 'true';
+    } catch (e) {
+        console.warn("Could not read cute mode preference from localStorage:", e);
+    }
+    
+    // Set the toggle to match saved preference
+    cuteToggle.checked = isCuteMode;
+    
+    // Apply the cute mode setting
+    Settings.applyCuteMode(isCuteMode);
+    
+    // Apply bounce animation to the active emoji on initial load
+    const defaultIcon = document.querySelector('.style-icon.default');
+    const cuteIcon = document.querySelector('.style-icon.cute');
+    
+    if (defaultIcon && cuteIcon) {
+        const activeIcon = isCuteMode ? cuteIcon : defaultIcon;
+        activeIcon.classList.add('style-icon-active');
+    }
+    
+    // Add event listener for toggle changes
+    cuteToggle.addEventListener('change', Settings.toggleCuteMode);
+};
+
 /**
  * Initialize settings module.
  */
@@ -218,6 +317,9 @@ Settings.init = () => {
     
     // Initialize theme
     Settings.initTheme();
+    
+    // Initialize cute mode
+    Settings.initCuteMode();
     
     // Setup keyboard shortcuts
     document.addEventListener('keydown', (event) => {
