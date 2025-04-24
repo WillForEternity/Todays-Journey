@@ -486,6 +486,8 @@ CalendarApp.createTaskListItem = (task, displayDate) => {
        ? (CalendarApp.state.instanceCompletions[displayDate]?.[task.id] ?? false)
        : !!task.completed;
    
+    // Note: We don't add the animate-slash class here
+    // That class is only added in toggleTaskCompletion when a task is first completed
     li.classList.toggle('completed', completedState);
     li.classList.toggle('is-recurring-instance', isInstance);
     li.classList.toggle('timeless-task', !task.time);
@@ -833,22 +835,70 @@ CalendarApp.finalizeTaskAddition = async () => {
 CalendarApp.toggleTaskCompletion = async (taskId, originalDate, instanceDate = originalDate) => {
     const displayDate = instanceDate;
     const isInstance = displayDate !== originalDate;
+    
+    // Track if this is a completion event (not an un-completion)
+    let isBeingCompleted = false;
+    
     if (isInstance) {
         if (!CalendarApp.state.instanceCompletions[displayDate]) {
             CalendarApp.state.instanceCompletions[displayDate] = {};
         }
         const currentState = CalendarApp.state.instanceCompletions[displayDate][taskId] ?? false;
+        isBeingCompleted = !currentState; // Track if this is a completion action
+        
         const newState = !currentState;
         CalendarApp.state.instanceCompletions[displayDate][taskId] = newState;
+        
+        // If task is being completed, apply animation before re-rendering
+        if (isBeingCompleted) {
+            const listItem = document.querySelector(`li[data-task-id="${taskId}"][data-original-date="${originalDate}"]`);
+            if (listItem) {
+                listItem.classList.add('completed', 'animate-slash');
+                // Allow animation to play before re-rendering
+                setTimeout(() => {
+                    CalendarApp.renderTaskList();
+                    CalendarApp.renderImportantTasks();
+                }, 700); // Match animation duration
+                return;
+            }
+        }
+        
         CalendarApp.renderTaskList();
         CalendarApp.renderImportantTasks();
         return;
     }
+    
     const task = CalendarApp.findTaskInMemory(taskId, originalDate);
     if (task) {
         const originalCompletedState = !!task.completed;
+        isBeingCompleted = !originalCompletedState; // Track if this is a completion action
+        
         task.completed = !originalCompletedState;
         task.updatedAt = Date.now();
+        
+        // If task is being completed, apply animation before re-rendering
+        if (isBeingCompleted) {
+            const listItem = document.querySelector(`li[data-task-id="${taskId}"][data-original-date="${originalDate}"]`);
+            if (listItem) {
+                listItem.classList.add('completed', 'animate-slash');
+                // Allow animation to play before re-rendering
+                setTimeout(() => {
+                    try {
+                        CalendarApp.updateTaskDB(task);
+                        console.log("Calendar: Task completion updated in DB:", taskId, task.completed);
+                    } catch (error) {
+                        console.error("Calendar: Failed to update task completion:", error);
+                        task.completed = originalCompletedState;
+                        task.updatedAt = Date.now();
+                        alert("Error updating task status. Please try again.");
+                    }
+                    CalendarApp.renderTaskList();
+                    CalendarApp.renderImportantTasks();
+                }, 700); // Match animation duration
+                return;
+            }
+        }
+        
         // Optimistic UI update
         CalendarApp.renderTaskList();
         CalendarApp.renderImportantTasks();

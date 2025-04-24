@@ -140,8 +140,18 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
     transform-origin: left center;
     z-index: 5;
     will-change: transform;
-    animation: slashThrough 0.7s cubic-bezier(0.2, 0, 0.2, 1) forwards; 
-    /* Perfectly continuous acceleration curve with no inflection points */
+}
+
+/* Only apply the animation to newly completed tasks with the animate-slash class */
+#taskList li.completed.animate-slash::after,
+#importantList li.completed.animate-slash::after {
+    animation: slashThrough 0.7s cubic-bezier(0.2, 0, 0.2, 1) forwards;
+}
+
+/* For already completed tasks without the animation class (already slashed) */
+#taskList li.completed:not(.animate-slash)::after,
+#importantList li.completed:not(.animate-slash)::after {
+    transform: scaleX(1); /* Just show the full line without animation */
 }
 
 #taskList li.completed .task-content-wrapper,
