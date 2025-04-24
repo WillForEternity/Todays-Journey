@@ -20,6 +20,9 @@
             <i data-feather="book"></i> <!-- Initial icon guess -->
         </button>
         <h1 id="appTitle"></h1> <!-- Set initial text by JS -->
+        <button id="settingsBtn" class="settings-button" title="Settings">
+            <span class="gear-emoji">⚙️</span>
+        </button>
     </div>
 
     <!-- ======================= -->
@@ -150,6 +153,20 @@
             <div class="modal-actions">
                 <button id="modalCancelBtn" class="modal-button modal-button-cancel">Cancel</button>
                 <button id="modalConfirmBtn" class="modal-button modal-button-confirm">Add Task</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Menu Modal -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal-dialog settings-modal">
+            <h3>Settings</h3>
+            <div class="modal-content">
+                <!-- Settings content will go here in the future -->
+                <p class="settings-placeholder">Settings options will appear here in future updates.</p>
+            </div>
+            <div class="modal-actions">
+                <button id="settingsCloseBtn" class="modal-button modal-button-confirm">Close</button>
             </div>
         </div>
     </div>

@@ -29,6 +29,10 @@ App.dom = {
     notesViewContainer: document.querySelector('.notes-app-container.notes-view'),
     // Modal overlay (referenced by calendar app)
     taskDetailsModal: document.getElementById('taskDetailsModal'),
+    // Settings elements
+    settingsBtn: document.getElementById('settingsBtn'),
+    settingsModal: document.getElementById('settingsModal'),
+    settingsCloseBtn: document.getElementById('settingsCloseBtn'),
     // Key Input elements for focusing
     taskInput: document.getElementById('taskInput'), // Calendar
     addRootFolderBtn: document.getElementById('addRootFolderBtn'), // Notes
@@ -314,6 +318,47 @@ App.dbAction = (storeName, mode, action, data) => {
 };
 
 
+// --- Settings Menu Functions ---
+
+/**
+ * Opens the settings modal.
+ */
+App.openSettings = () => {
+    const { settingsModal } = App.dom;
+    if (!settingsModal) return;
+    settingsModal.classList.add('visible');
+};
+
+/**
+ * Closes the settings modal.
+ */
+App.closeSettings = () => {
+    const { settingsModal } = App.dom;
+    if (!settingsModal) return;
+    settingsModal.classList.remove('visible');
+};
+
+/**
+ * Handles the gear icon spin animation on mouse enter.
+ */
+App.handleSettingsHoverIn = () => {
+    const gearEmoji = App.dom.settingsBtn?.querySelector('.gear-emoji');
+    if (gearEmoji) {
+        gearEmoji.style.transform = 'rotate(180deg)';
+    }
+};
+
+/**
+ * Handles the gear icon spin animation on mouse leave.
+ */
+App.handleSettingsHoverOut = () => {
+    const gearEmoji = App.dom.settingsBtn?.querySelector('.gear-emoji');
+    if (gearEmoji) {
+        gearEmoji.style.transform = 'rotate(0deg)';
+    }
+};
+
+
 // --- View Switching Logic ---
 
 /**
@@ -483,12 +528,35 @@ App.init = async () => {
         // 4. Setup Global Event Listeners
         App.dom.viewToggleBtn?.addEventListener('click', App.toggleView);
 
+        // Setup settings button events
+        if (App.dom.settingsBtn) {
+            App.dom.settingsBtn.addEventListener('click', App.openSettings);
+            App.dom.settingsBtn.addEventListener('mouseenter', App.handleSettingsHoverIn);
+            App.dom.settingsBtn.addEventListener('mouseleave', App.handleSettingsHoverOut);
+        }
+        
+        if (App.dom.settingsCloseBtn) {
+            App.dom.settingsCloseBtn.addEventListener('click', App.closeSettings);
+        }
+        
+        if (App.dom.settingsModal) {
+            App.dom.settingsModal.addEventListener('click', (event) => {
+                if (event.target === App.dom.settingsModal) {
+                    App.closeSettings();
+                }
+            });
+        }
+
         document.addEventListener('keydown', (event) => {
             // Close Calendar Task Details Modal on Escape
             if (event.key === 'Escape' && App.dom.taskDetailsModal?.classList.contains('visible')) {
                 if (typeof CalendarApp !== 'undefined' && typeof CalendarApp.closeModal === 'function') {
                      CalendarApp.closeModal();
                 }
+            }
+            // Close Settings Modal on Escape
+            else if (event.key === 'Escape' && App.dom.settingsModal?.classList.contains('visible')) {
+                App.closeSettings();
             }
             // Close Notes Add Folder Input on Escape (Global fallback)
              else if (event.key === 'Escape' && App.state.currentView === 'notes' && typeof NotesApp !== 'undefined' && NotesApp.state?.isAddingFolder) {

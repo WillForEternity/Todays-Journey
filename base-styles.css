@@ -93,8 +93,46 @@ body {
     align-items: center;
     padding: 0 20px;
     z-index: 500; /* Above content, below modal */
+    justify-content: space-between; /* Spread items to edges */
 }
 
+/* Updated to align title to left and make space for settings */
+#appTitle {
+    font-size: 1.4em;
+    font-weight: 500;
+    color: var(--accent-color);
+    margin-right: auto; /* Push to left, create space for settings button */
+}
+
+/* Settings Button Styles */
+.settings-button {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--text-color);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: var(--border-radius);
+    transition: background-color var(--transition-speed) ease, border-color var(--transition-speed) ease;
+    line-height: 0;
+    margin-left: 15px;
+}
+
+.settings-button:hover {
+    background-color: var(--hover-bg-color);
+}
+
+.settings-button:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.gear-emoji {
+    font-size: 1.4em;
+    display: inline-block;
+    transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+/* View Toggle Button Styles */
 .view-toggle-button {
     background: none;
     border: 1px solid transparent;
@@ -118,12 +156,6 @@ body {
     height: 24px;
     stroke-width: 2;
     vertical-align: middle; /* Better alignment */
-}
-
-#appTitle {
-    font-size: 1.4em;
-    font-weight: 500;
-    color: var(--accent-color);
 }
 
 /* --- Shared Input Area Styles --- */
@@ -235,7 +267,6 @@ body {
     border: 2px solid var(--ui-bg-color); /* Adjust base bg */
 }
 
-
 /* --- Animations --- */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(5px); }
@@ -246,6 +277,17 @@ body {
     animation: fadeIn 0.3s ease forwards;
 }
 
+/* Settings modal specific styles */
+.settings-modal {
+    min-width: 400px;
+}
+
+.settings-placeholder {
+    text-align: center;
+    color: #888;
+    padding: 20px;
+    font-style: italic;
+}
 
 /* --- Modal Styles (Shared Structure) --- */
 .modal-overlay {
