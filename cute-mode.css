@@ -23,6 +23,10 @@ body.cute-mode {
     /* Folder navigation in Notes view */
     --folder-active-color: var(--accent-color-pink); /* Color for active/selected folder */
     --folder-selected-bg: rgba(255, 128, 171, 0.15); /* Background for selected folder */
+    
+    /* Button color (defined to match accent color) */
+    --button-color: var(--accent-color-pink);
+    --button-hover-color: #ff4081; /* Slightly darker pink for hover */
 }
 
 /* Calendar day specific overrides */
@@ -36,7 +40,14 @@ body.cute-mode .input-area button {
     background-color: var(--accent-color-pink);
 }
 
-/* Explicit override for Add button hover state in cute mode */
-body.cute-mode .input-area button:hover { 
-    background-color: #ff4081; /* Slightly darker pink for hover */
+/* Style the Notes app highlight elements */
+body.cute-mode .note-list-item.selected {
+    border-left-color: var(--accent-color-pink);
+}
+
+/* Style the text inputs in the Notes editor when focused */
+body.cute-mode #noteTitleInput:focus,
+body.cute-mode #noteContentInput:focus {
+    border-color: var(--accent-color-pink);
+    box-shadow: 0 0 0 2px rgba(255, 128, 171, 0.3);
 }
