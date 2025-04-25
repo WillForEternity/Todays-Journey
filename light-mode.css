@@ -5,14 +5,14 @@
 
 /* Base light mode color variables */
 :root {
-    /* Define distinct color palette for light mode */
-    --task-color-light-default: #5eba5e; /* Deeper green for better contrast on light bg */
-    --task-color-light-teal: #0099cc; /* Deeper teal */
-    --task-color-light-purple: #6352b9; /* Deeper purple */
-    --task-color-light-blue: #4863b0; /* Deeper blue */
-    --task-color-light-coral: #d44f8a; /* Deeper coral/pink */
-    --task-color-light-amber: #e08a00; /* Richer amber */
-    --task-color-light-forest: #1e9555; /* Deeper forest green */
+    /* Define a sophisticated, modern color palette for light mode */
+    --task-color-light-default: #c8f5a2; /* Mint leaf green */
+    --task-color-light-teal: #78cc91; /* Fresh teal */
+    --task-color-light-purple: #53beb0; /* Ocean teal */
+    --task-color-light-blue: #4a8ec4; /* Cobalt blue */
+    --task-color-light-coral: #ca1f69; /* Vibrant magenta */
+    --task-color-light-amber: #fb5607; /* Energetic vermilion orange */
+    --task-color-light-forest: #2d6a4f; /* Deep jungle green */
     
     /* Define completed task styling for light mode */
     --completed-border-color-light: #b3b3b3; /* Light gray border for completed tasks */
@@ -36,6 +36,20 @@ body.light-mode {
     --completed-text-color: var(--completed-text-color-light);
 }
 
+/* Ensure color picker swatches show light mode colors */
+body.light-mode .color-default { background-color: var(--task-color-light-default); }
+body.light-mode .color-teal { background-color: var(--task-color-light-teal); }
+body.light-mode .color-purple { background-color: var(--task-color-light-purple); }
+body.light-mode .color-blue { background-color: var(--task-color-light-blue); }
+body.light-mode .color-coral { background-color: var(--task-color-light-coral); }
+body.light-mode .color-amber { background-color: var(--task-color-light-amber); }
+body.light-mode .color-forest { background-color: var(--task-color-light-forest); }
+
+/* Add contrast to selected swatches in light mode */
+body.light-mode .color-swatch.selected {
+    box-shadow: 0 0 0 2px #fff; /* Keep the original white border for selected colors */
+}
+
 /* Light mode + cute mode combinations */
 body.light-mode.cute-mode {
     /* In cute+light mode, use the cute mode's pastel colors */
@@ -47,6 +61,15 @@ body.light-mode.cute-mode {
     --task-color-amber: var(--task-color-cute-amber);
     --task-color-forest: var(--task-color-cute-forest);
 }
+
+/* Also ensure the cute mode colors show correctly in the picker */
+body.light-mode.cute-mode .color-default { background-color: var(--task-color-cute-default); }
+body.light-mode.cute-mode .color-teal { background-color: var(--task-color-cute-teal); }
+body.light-mode.cute-mode .color-purple { background-color: var(--task-color-cute-purple); }
+body.light-mode.cute-mode .color-blue { background-color: var(--task-color-cute-blue); }
+body.light-mode.cute-mode .color-coral { background-color: var(--task-color-cute-coral); }
+body.light-mode.cute-mode .color-amber { background-color: var(--task-color-cute-amber); }
+body.light-mode.cute-mode .color-forest { background-color: var(--task-color-cute-forest); }
 
 /* Custom styling for completed tasks in light mode */
 /* Updated to apply to ALL tasks, both timeless and timed tasks */

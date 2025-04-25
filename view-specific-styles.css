@@ -181,6 +181,9 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
 }
 
 /* Custom colored tasks */
+#taskList li.task-color-default:not(.completed) {
+    border-left-color: var(--task-color-default);
+}
 #taskList li.task-color-teal:not(.completed) {
     border-left-color: var(--task-color-teal);
 }
