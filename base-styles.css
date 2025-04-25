@@ -384,7 +384,7 @@ body {
 
 .settings-modal h3 {
     font-size: 2em; /* Much larger heading */
-    margin-bottom: 35px; /* More space below heading */
+    margin-bottom: 0; /* Remove bottom margin since we're using settings-header margin */
 }
 
 .settings-group {
@@ -590,7 +590,7 @@ body.cute-mode {
 .settings-header {
     display: flex;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 30px;
     position: relative;
 }
 
@@ -602,7 +602,7 @@ body.cute-mode {
 
 /* Help button in settings */
 .help-button {
-    font-size: 1.5em;
+    font-size: 2.5em;
     background: none;
     border: none;
     cursor: pointer;
