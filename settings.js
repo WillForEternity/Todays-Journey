@@ -60,6 +60,9 @@ Settings.handleSettingsHoverOut = () => {
 Settings.applyTheme = (isLightMode) => {
     const root = document.documentElement;
     
+    // Toggle light-mode class on body element for CSS selection
+    document.body.classList.toggle('light-mode', isLightMode);
+    
     // Update theme emoji sizes
     const moonEmoji = document.querySelector('.theme-icon.moon');
     const sunEmoji = document.querySelector('.theme-icon.sun');

@@ -1,0 +1,40 @@
+/* Light Mode Styles
+ * This file contains styles specific to light mode
+ * that changes colors from the default dark mode
+ */
+
+/* Base light mode color variables */
+:root {
+    /* Define distinct color palette for light mode */
+    --task-color-light-default: #5eba5e; /* Deeper green for better contrast on light bg */
+    --task-color-light-teal: #0099cc; /* Deeper teal */
+    --task-color-light-purple: #6352b9; /* Deeper purple */
+    --task-color-light-blue: #4863b0; /* Deeper blue */
+    --task-color-light-coral: #d44f8a; /* Deeper coral/pink */
+    --task-color-light-amber: #e08a00; /* Richer amber */
+    --task-color-light-forest: #1e9555; /* Deeper forest green */
+}
+
+/* When light mode is active, these styles apply */
+body.light-mode {
+    /* Override task colors with light mode variants */
+    --task-color-default: var(--task-color-light-default);
+    --task-color-teal: var(--task-color-light-teal);
+    --task-color-purple: var(--task-color-light-purple);
+    --task-color-blue: var(--task-color-light-blue);
+    --task-color-coral: var(--task-color-light-coral);
+    --task-color-amber: var(--task-color-light-amber);
+    --task-color-forest: var(--task-color-light-forest);
+}
+
+/* Light mode + cute mode combinations */
+body.light-mode.cute-mode {
+    /* In cute+light mode, use the cute mode's pastel colors */
+    --task-color-default: var(--task-color-cute-default);
+    --task-color-teal: var(--task-color-cute-teal);
+    --task-color-purple: var(--task-color-cute-purple);
+    --task-color-blue: var(--task-color-cute-blue);
+    --task-color-coral: var(--task-color-cute-coral);
+    --task-color-amber: var(--task-color-cute-amber);
+    --task-color-forest: var(--task-color-cute-forest);
+}
