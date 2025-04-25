@@ -8,7 +8,10 @@ Settings.dom = {
     settingsModal: document.getElementById('settingsModal'),
     settingsCloseBtn: document.getElementById('settingsCloseBtn'),
     themeToggle: document.getElementById('themeToggle'),
-    cuteToggle: document.getElementById('cuteToggle')
+    cuteToggle: document.getElementById('cuteToggle'),
+    helpButton: document.getElementById('helpButton'),
+    helpContent: document.getElementById('helpContent'),
+    closeHelpButton: document.getElementById('closeHelpButton')
 };
 
 // --- Core Settings Functions ---
@@ -288,6 +291,37 @@ Settings.initCuteMode = () => {
     cuteToggle.addEventListener('change', Settings.toggleCuteMode);
 };
 
+// --- Help Content Management ---
+
+/**
+ * Toggles the help content visibility with animation.
+ */
+Settings.toggleHelp = () => {
+    const { helpContent } = Settings.dom;
+    if (!helpContent) return;
+    
+    // Toggle visibility using the visible class
+    helpContent.classList.toggle('visible');
+};
+
+/**
+ * Shows the help content with animation.
+ */
+Settings.showHelp = () => {
+    const { helpContent } = Settings.dom;
+    if (!helpContent) return;
+    helpContent.classList.add('visible');
+};
+
+/**
+ * Hides the help content with animation.
+ */
+Settings.hideHelp = () => {
+    const { helpContent } = Settings.dom;
+    if (!helpContent) return;
+    helpContent.classList.remove('visible');
+};
+
 /**
  * Initialize settings module.
  */
@@ -323,6 +357,15 @@ Settings.init = () => {
     
     // Initialize cute mode
     Settings.initCuteMode();
+    
+    // Setup help button
+    if (Settings.dom.helpButton) {
+        Settings.dom.helpButton.addEventListener('click', Settings.toggleHelp);
+    }
+    
+    if (Settings.dom.closeHelpButton) {
+        Settings.dom.closeHelpButton.addEventListener('click', Settings.hideHelp);
+    }
     
     // Setup keyboard shortcuts
     document.addEventListener('keydown', (event) => {

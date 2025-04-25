@@ -169,7 +169,10 @@
     <!-- Settings Menu Modal -->
     <div id="settingsModal" class="modal-overlay">
         <div class="modal-dialog settings-modal">
-            <h3>[ Settings ]</h3>
+            <div class="settings-header">
+                <button id="helpButton" class="help-button">📖</button>
+                <h3>[ Settings ]</h3>
+            </div>
             <div class="modal-content">
                 <div class="settings-group">
                     <div class="settings-group-header">
@@ -197,6 +200,46 @@
                             <span class="style-icon cute">🌸</span>
                         </div>
                     </div>
+                </div>
+                
+                <!-- Help content - shown when help button is clicked -->
+                <div id="helpContent" class="help-content">
+                    <h4>User Guide</h4>
+                    
+                    <h5>Storage Information</h5>
+                    <p>This application stores all your data directly in your browser using IndexedDB and localStorage:</p>
+                    <ul>
+                        <li>All data stays on your device - no data is sent to any server</li>
+                        <li>Each browser/device has its own separate copy of your data</li>
+                        <li>Typical storage usage is very small (under 5MB even with many tasks and notes)</li>
+                        <li>Your data persists between sessions unless you clear your browser data</li>
+                    </ul>
+                    
+                    <h5>Calendar View</h5>
+                    <ul>
+                        <li>Add tasks for specific days with optional time and location</li>
+                        <li>Star important tasks to keep them visible in the sidebar</li>
+                        <li>Color-code timeless tasks by hovering over them</li>
+                        <li>Set tasks as recurring to have them appear every week</li>
+                        <li>Click a task to mark it as completed</li>
+                    </ul>
+                    
+                    <h5>Notes View</h5>
+                    <ul>
+                        <li>Organize notes in nested folders</li>
+                        <li>Use Markdown formatting in notes</li>
+                        <li>Preview formatted notes with the Preview button</li>
+                        <li>Export notes to PDF with proper formatting for code blocks and other elements</li>
+                    </ul>
+                    
+                    <h5>Best Practices</h5>
+                    <ul>
+                        <li>Do not use private browsing/incognito mode if you want data to persist</li>
+                        <li>Regularly export important notes to PDF as backup</li>
+                        <li>If you need to access data across devices, use the same browser and consider syncing options for that browser</li>
+                    </ul>
+                    
+                    <button id="closeHelpButton" class="modal-button modal-button-confirm">Close Help</button>
                 </div>
                 
                 <!-- More settings options can be added here in the future -->
