@@ -595,6 +595,11 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
      display: none;
 }
 
+/* Recurring task date in important tasks list */
+.recurring-task-date {
+    color: var(--accent-color);
+    font-style: italic;
+}
 
 /* --- ===================== --- */
 /* --- Notes View Styles    --- */

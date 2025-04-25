@@ -643,10 +643,24 @@ CalendarApp.createImportantTaskListItem = (taskInfo) => {
     
     const dateSpan = document.createElement('span');
     dateSpan.className = 'task-date';
-    const parsedDate = CalendarApp.parseDateString(taskInfo.originalDate);
-    dateSpan.textContent = parsedDate
-        ? `(${parsedDate.toLocaleDateString('default', { month: 'short', day: 'numeric', timeZone: 'UTC' })})`
-        : `(${taskInfo.originalDate})`;
+    
+    // Check if the task is a recurring task
+    if (taskInfo.isRecurringWeekly) {
+        // Get the day of week from the original date
+        const parsedDate = CalendarApp.parseDateString(taskInfo.originalDate);
+        const dayOfWeek = parsedDate ? 
+            parsedDate.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }) : 
+            'weekly';
+            
+        dateSpan.textContent = `(Every ${dayOfWeek})`;
+        dateSpan.classList.add('recurring-task-date');
+    } else {
+        // Standard non-recurring task date display
+        const parsedDate = CalendarApp.parseDateString(taskInfo.originalDate);
+        dateSpan.textContent = parsedDate
+            ? `(${parsedDate.toLocaleDateString('default', { month: 'short', day: 'numeric', timeZone: 'UTC' })})`
+            : `(${taskInfo.originalDate})`;
+    }
 
     li.appendChild(contentWrapper);
     li.appendChild(dateSpan);
