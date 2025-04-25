@@ -13,6 +13,11 @@
     --task-color-light-coral: #d44f8a; /* Deeper coral/pink */
     --task-color-light-amber: #e08a00; /* Richer amber */
     --task-color-light-forest: #1e9555; /* Deeper forest green */
+    
+    /* Define completed task styling for light mode */
+    --completed-border-color-light: #b3b3b3; /* Light gray border for completed tasks */
+    --completed-bg-color-light: #f0f0f0; /* Very light gray background for completed tasks */
+    --completed-text-color-light: #888888; /* Medium gray text for completed tasks */
 }
 
 /* When light mode is active, these styles apply */
@@ -25,6 +30,10 @@ body.light-mode {
     --task-color-coral: var(--task-color-light-coral);
     --task-color-amber: var(--task-color-light-amber);
     --task-color-forest: var(--task-color-light-forest);
+    
+    /* Override completed task styling */
+    --completed-border-color: var(--completed-border-color-light);
+    --completed-text-color: var(--completed-text-color-light);
 }
 
 /* Light mode + cute mode combinations */
@@ -37,4 +46,15 @@ body.light-mode.cute-mode {
     --task-color-coral: var(--task-color-cute-coral);
     --task-color-amber: var(--task-color-cute-amber);
     --task-color-forest: var(--task-color-cute-forest);
+}
+
+/* Custom styling for completed tasks in light mode */
+/* Updated to apply to ALL tasks, both timeless and timed tasks */
+body.light-mode #taskList li.completed {
+    background-color: var(--completed-bg-color-light);
+    border-left-color: var(--completed-border-color-light);
+}
+
+body.light-mode #taskList li.completed .task-content-wrapper {
+    opacity: 0.8; /* Less opacity reduction for better readability in light mode */
 }
