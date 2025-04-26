@@ -74,6 +74,23 @@ StickerManager.addEventListeners = () => {
                 StickerManager.triggerUpload(slotIndex);
             }
         });
+
+        // Add mousedown event for drag start
+        const preview = slot.querySelector('.sticker-preview');
+        if (preview) {
+            preview.addEventListener('mousedown', (e) => {
+                const slotIndex = parseInt(slot.dataset.slot);
+                const stickerData = StickerManager.state.stickers[slotIndex];
+                
+                if (stickerData) {
+                    // Prevent default drag behavior
+                    e.preventDefault();
+                    
+                    // Start drag operation
+                    StickerManager.startDraggingSticker(e, stickerData);
+                }
+            });
+        }
     });
 
     // File upload handler
@@ -287,6 +304,66 @@ StickerManager.removeSticker = (slotIndex) => {
         // Update the UI
         StickerManager.renderStickers();
     }
+};
+
+/**
+ * Creates a floating sticker element that follows the cursor
+ * @param {MouseEvent} initialEvent - The mousedown event that initiated the drag
+ * @param {Object} stickerData - The sticker data object
+ */
+StickerManager.startDraggingSticker = (initialEvent, stickerData) => {
+    // Close the sticker modal
+    StickerManager.closeStickerManager();
+    
+    // Create a floating sticker element
+    const floatingSticker = document.createElement('div');
+    floatingSticker.className = 'floating-sticker';
+    floatingSticker.style.position = 'fixed';
+    floatingSticker.style.pointerEvents = 'none';
+    floatingSticker.style.zIndex = '9999';
+    floatingSticker.style.width = '100px';
+    floatingSticker.style.height = '100px';
+    floatingSticker.style.transform = 'translate(-50%, -50%)';
+    
+    // Create image element
+    const img = document.createElement('img');
+    img.src = stickerData.imageData;
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'contain';
+    
+    // Add image to floating sticker
+    floatingSticker.appendChild(img);
+    
+    // Add to document body
+    document.body.appendChild(floatingSticker);
+    
+    // Position at initial cursor position
+    floatingSticker.style.left = `${initialEvent.clientX}px`;
+    floatingSticker.style.top = `${initialEvent.clientY}px`;
+    
+    // Function to move the sticker with the cursor
+    const moveSticker = (e) => {
+        floatingSticker.style.left = `${e.clientX}px`;
+        floatingSticker.style.top = `${e.clientY}px`;
+    };
+    
+    // Function to end the drag operation
+    const endDrag = () => {
+        // Remove floating sticker
+        floatingSticker.remove();
+        
+        // Remove event listeners
+        document.removeEventListener('mousemove', moveSticker);
+        document.removeEventListener('mouseup', endDrag);
+        
+        // Here we'd implement the drop functionality in the future
+        console.log('Sticker drag ended. Drop functionality will be implemented later.');
+    };
+    
+    // Add event listeners for dragging and releasing
+    document.addEventListener('mousemove', moveSticker);
+    document.addEventListener('mouseup', endDrag);
 };
 
 // Initialize on document ready
