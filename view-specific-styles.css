@@ -120,7 +120,7 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
 #taskList li.completed,
 #importantList li.completed {
     border-left-color: var(--completed-border-color) !important; /* Force grey border regardless of custom color */
-    background-color: #2a2a2d;
+    background-color: var(--subtle-background); /* Use theme variable instead of hard-coded dark color */
     position: relative; /* Ensure position relative for the absolute pseudo-element */
 }
 
@@ -207,7 +207,7 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
 #taskList li.timeless-task.completed,
 #taskList li[class*="task-color-"].completed {
     border-left-color: var(--completed-border-color);
-    background-color: #2a2a2d;
+    background-color: var(--subtle-background);
 }
 
 #taskList li.timeless-task.completed .task-text,
