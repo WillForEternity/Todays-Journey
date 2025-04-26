@@ -172,6 +172,66 @@ BackgroundCustomizer.applyBackground = (imageDataUrl) => {
     
     // Add a semi-transparent overlay to ensure text remains readable
     dailyTasksPanel.classList.add('with-background-image');
+    
+    // Analyze the brightness of the image and set appropriate text color
+    BackgroundCustomizer.analyzeImageBrightness(imageDataUrl);
+};
+
+/**
+ * Analyzes the brightness of an image and sets appropriate text color.
+ * @param {string} imageDataUrl - The data URL of the image
+ */
+BackgroundCustomizer.analyzeImageBrightness = (imageDataUrl) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.src = imageDataUrl;
+    
+    img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size to a small sample (we don't need full resolution for this)
+        canvas.width = Math.min(img.width, 100);
+        canvas.height = Math.min(img.height, 100);
+        
+        // Draw image on canvas
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Get image data
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        let totalBrightness = 0;
+        const pixelCount = data.length / 4; // RGBA values (4 values per pixel)
+        
+        // Calculate average brightness using the luminance formula
+        for (let i = 0; i < data.length; i += 4) {
+            // Luminance formula (perceived brightness): 0.299*R + 0.587*G + 0.114*B
+            const brightness = (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]) / 255;
+            totalBrightness += brightness;
+        }
+        
+        const averageBrightness = totalBrightness / pixelCount;
+        console.log('Average brightness:', averageBrightness);
+        
+        // Apply dark or light text based on brightness threshold
+        const dailyTasksPanel = document.querySelector('.daily-tasks-panel');
+        if (dailyTasksPanel) {
+            // Remove any existing text color classes
+            dailyTasksPanel.classList.remove('dark-background', 'light-background');
+            
+            // Add appropriate class based on brightness (threshold of 0.5)
+            if (averageBrightness < 0.5) {
+                dailyTasksPanel.classList.add('dark-background');
+            } else {
+                dailyTasksPanel.classList.add('light-background');
+            }
+        }
+    };
+    
+    img.onerror = (e) => {
+        console.error('Error analyzing image brightness:', e);
+    };
 };
 
 /**
@@ -187,8 +247,8 @@ BackgroundCustomizer.removeBackgroundFromUI = () => {
     dailyTasksPanel.style.backgroundPosition = '';
     dailyTasksPanel.style.backgroundRepeat = '';
     
-    // Remove the class that applies the overlay
-    dailyTasksPanel.classList.remove('with-background-image');
+    // Remove the classes that apply the overlay and text colors
+    dailyTasksPanel.classList.remove('with-background-image', 'dark-background', 'light-background');
 };
 
 /**

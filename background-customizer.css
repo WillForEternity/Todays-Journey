@@ -264,6 +264,36 @@
     border-radius: 4px;
 }
 
+/* Adaptive text colors for dark backgrounds */
+.daily-tasks-panel.dark-background .task-text,
+.daily-tasks-panel.dark-background h2,
+.daily-tasks-panel.dark-background h3,
+.daily-tasks-panel.dark-background p,
+.daily-tasks-panel.dark-background .empty-state,
+.daily-tasks-panel.dark-background li,
+.daily-tasks-panel.dark-background span:not(.star) {
+    color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.daily-tasks-panel.dark-background #taskInput::placeholder {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Adaptive text colors for light backgrounds */
+.daily-tasks-panel.light-background .task-text,
+.daily-tasks-panel.light-background h2,
+.daily-tasks-panel.light-background h3,
+.daily-tasks-panel.light-background p,
+.daily-tasks-panel.light-background .empty-state,
+.daily-tasks-panel.light-background li,
+.daily-tasks-panel.light-background span:not(.star) {
+    color: rgba(0, 0, 0, 0.85) !important;
+}
+
+.daily-tasks-panel.light-background #taskInput::placeholder {
+    color: rgba(0, 0, 0, 0.5) !important;
+}
+
 /* Specific styling for different element types */
 .daily-tasks-panel.with-background-image h2,
 .daily-tasks-panel.with-background-image h3 {
@@ -287,7 +317,7 @@
     padding: 10px 15px;
     margin-bottom: 5px;
     backdrop-filter: blur(3px);
-    border: none;
+    border: none; /* Remove borders around tasks */
 }
 
 /* Adjust input area */
@@ -295,7 +325,7 @@
     background-color: rgba(255, 255, 255, 0.3) !important;
     backdrop-filter: blur(3px);
     border-radius: 4px;
-    border: none;
+    border: none; /* Remove border */
     padding: 5px;
     display: flex;
     margin-bottom: 15px;
@@ -307,6 +337,18 @@
     flex: 1;
     padding: 8px 12px;
     border-radius: 4px 0 0 4px;
+}
+
+/* Button styling based on background */
+.daily-tasks-panel.dark-background #addButton {
+    background-color: rgba(255, 255, 255, 0.6) !important;
+    color: rgba(0, 0, 0, 0.85) !important;
+    font-weight: 500;
+}
+
+.daily-tasks-panel.light-background #addButton {
+    background-color: rgba(0, 0, 0, 0.1) !important;
+    color: rgba(0, 0, 0, 0.85) !important;
 }
 
 .daily-tasks-panel.with-background-image #addButton {
@@ -328,5 +370,5 @@
     border-radius: 4px;
     padding: 10px;
     backdrop-filter: blur(3px);
-    border: none;
+    border: none; /* Remove border */
 }
