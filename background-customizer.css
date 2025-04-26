@@ -250,55 +250,70 @@
     position: relative;
 }
 
+/* Remove the overlay completely to maximize background visibility */
 .daily-tasks-panel.with-background-image::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5); /* Dark overlay for better readability */
-    z-index: 0;
-    pointer-events: none;
+    display: none;
 }
 
-/* Make sure all content inside the panel is above the overlay */
+/* Make all elements inside the panel translucent */
 .daily-tasks-panel.with-background-image > * {
     position: relative;
     z-index: 1;
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    backdrop-filter: blur(2px);
+    border-radius: 4px;
 }
 
-/* Adjust text color for better contrast when background image is present */
+/* Specific styling for different element types */
 .daily-tasks-panel.with-background-image h2,
-.daily-tasks-panel.with-background-image p,
-.daily-tasks-panel.with-background-image .task-text,
-.daily-tasks-panel.with-background-image .empty-state {
-    color: #ffffff;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+.daily-tasks-panel.with-background-image h3 {
+    padding: 5px 10px;
+    margin: 5px 0;
+    background-color: rgba(255, 255, 255, 0.4) !important;
+    backdrop-filter: blur(3px);
+    border-radius: 4px;
+    display: inline-block;
 }
 
-/* Style task items with background for better readability */
+/* Style task items */
+.daily-tasks-panel.with-background-image ul {
+    background-color: transparent !important;
+    padding: 0;
+}
+
 .daily-tasks-panel.with-background-image ul li {
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(255, 255, 255, 0.3) !important;
     border-radius: 4px;
     padding: 10px 15px;
     margin-bottom: 5px;
-    backdrop-filter: blur(2px);
-}
-
-/* Adjust input area for better visibility */
-.daily-tasks-panel.with-background-image .input-area {
-    background-color: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(3px);
-    border-radius: 4px;
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.daily-tasks-panel.with-background-image #taskInput {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: #ffffff;
+/* Adjust input area */
+.daily-tasks-panel.with-background-image .input-area {
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    backdrop-filter: blur(3px);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 5px;
 }
 
-.daily-tasks-panel.with-background-image #taskInput::placeholder {
-    color: rgba(255, 255, 255, 0.7);
+.daily-tasks-panel.with-background-image #taskInput {
+    background-color: rgba(255, 255, 255, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.daily-tasks-panel.with-background-image button {
+    background-color: rgba(255, 255, 255, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Empty state */
+.daily-tasks-panel.with-background-image .empty-state {
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    border-radius: 4px;
+    padding: 10px;
+    backdrop-filter: blur(3px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
