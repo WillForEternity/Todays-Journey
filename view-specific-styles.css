@@ -133,8 +133,8 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
     background-color: rgba(110, 110, 110, 0.9);
     top: 50%;
     left: 4px;
-    /* Stop before the task actions and icons */
-    right: 80px;
+    /* Extend the line almost to the very end of the task item */
+    right: 10px;
     width: auto;
     transform: scaleX(0);
     transform-origin: left center;
