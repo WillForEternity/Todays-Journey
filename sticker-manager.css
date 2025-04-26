@@ -222,21 +222,110 @@ body.dark-mode .sticker-remove-btn {
     background-color: rgba(0, 0, 0, 0.6);
 }
 
-/* Stickers placed on the journal */
-.sticker-instance {
-    position: absolute;
-    z-index: 10;
-    cursor: move;
-    user-select: none;
-    transition: transform 0.1s ease;
+/* Make sure containers have proper positioning context for absolute positioned stickers */
+.daily-tasks-panel,
+.notes-editor-panel,
+#noteEditor {
+    position: relative; /* This is necessary for absolute positioning of stickers */
 }
 
-.sticker-instance img {
-    max-width: 100px;
-    max-height: 100px;
+/* Floating sticker (during drag) */
+.floating-sticker {
     pointer-events: none;
+    z-index: 9999;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+/* Placed sticker instances */
+.sticker-instance {
+    position: fixed; /* Fixed position relative to viewport */
+    cursor: move;  /* Show move cursor */
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    transition: transform 0.2s ease, filter 0.2s ease;
+    user-select: none;
+    z-index: 1000; /* High enough to be above most content but below modals */
 }
 
 .sticker-instance:hover {
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
     transform: scale(1.05);
+    z-index: 1001; /* Bring to front when hovered */
+}
+
+.sticker-instance img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none; /* Prevent image from intercepting events */
+}
+
+/* Delete button for placed stickers */
+.sticker-instance-delete {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background-color: #ff5252;
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    font-size: 12px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: transform 0.1s ease, background-color 0.1s ease;
+    z-index: 1002; /* Above the sticker itself */
+}
+
+.sticker-instance-delete:hover {
+    background-color: #ff1744;
+    transform: scale(1.1);
+}
+
+.sticker-instance-delete svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Resize handle for stickers */
+.sticker-resize-handle {
+    position: absolute;
+    bottom: -8px;
+    right: -8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: white;
+    border: 2px solid #2196F3;
+    cursor: nwse-resize; /* Diagonal resize cursor */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.1s ease;
+    z-index: 1002; /* Same as delete button */
+}
+
+.sticker-resize-handle:hover {
+    transform: scale(1.2);
+    background-color: #e3f2fd;
+}
+
+/* Dark mode adjustments */
+body.dark-mode .sticker-instance-delete {
+    background-color: #ef5350;
+}
+
+body.dark-mode .sticker-instance-delete:hover {
+    background-color: #f44336;
+}
+
+body.dark-mode .sticker-resize-handle {
+    background-color: #333;
+    border-color: #64b5f6;
+}
+
+body.dark-mode .sticker-resize-handle:hover {
+    background-color: #424242;
 }
