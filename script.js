@@ -7,8 +7,6 @@ CalendarApp.dom = {
     // Task input elements
     taskInput: document.getElementById('taskInput'),
     addButton: document.getElementById('addButton'),
-    importantCheckbox: document.getElementById('importantCheckbox'),
-    importantCheckboxLabel: document.getElementById('importantCheckbox')?.parentElement,
     
     // Task list elements
     taskList: document.getElementById('taskList'),
@@ -371,7 +369,7 @@ CalendarApp.renderCalendar = (year, month) => {
  * Renders the task list for the currently selected date AND updates the H1 title.
  */
 CalendarApp.renderTaskList = () => {
-    const { taskList, dailyEmptyState, taskInput, importantCheckbox } = CalendarApp.dom;
+    const { taskList, dailyEmptyState, taskInput } = CalendarApp.dom;
     const dateString = CalendarApp.state.selectedDate;
     const { appTitle } = App.dom; // Get shared H1
 
@@ -418,7 +416,6 @@ CalendarApp.renderTaskList = () => {
 
      // Reset input area
      if(taskInput) taskInput.value = '';
-     if(importantCheckbox) importantCheckbox.checked = false;
      CalendarApp.updateImportantInputStar();
 
      App.refreshIcons(); // Refresh delete icons etc.
@@ -674,15 +671,11 @@ CalendarApp.createImportantTaskListItem = (taskInfo) => {
 
 /**
  * Helper to update the visual state of the star next to the task input.
+ * Note: This function is kept for compatibility but does nothing now that we removed the star.
  */
 CalendarApp.updateImportantInputStar = () => {
-    const { importantCheckboxLabel, importantCheckbox } = CalendarApp.dom;
-    if (!importantCheckboxLabel || !importantCheckbox) return;
-    const starSpan = importantCheckboxLabel.querySelector('.star');
-    if (starSpan) {
-        starSpan.innerHTML = importantCheckbox.checked ? '★' : '☆';
-        starSpan.style.color = importantCheckbox.checked ? 'var(--important-color)' : '#666';
-    }
+    // Star icon removed from UI - function kept for compatibility
+    return;
 };
 
 /**
@@ -741,11 +734,12 @@ CalendarApp.navigateToTaskDate = (dateString) => {
  * Opens the task details modal to collect time/recurring info.
  */
 CalendarApp.handleAddTaskRequest = () => {
-    const { taskInput, importantCheckbox } = CalendarApp.dom;
-    if(!taskInput || !importantCheckbox) return;
+    const { taskInput } = CalendarApp.dom;
+    if(!taskInput) return;
 
     const text = taskInput.value.trim();
-    const isImportant = importantCheckbox.checked;
+    const isImportant = false;
+    
     if (!text) {
         alert("Please enter task text.");
         taskInput.focus();
@@ -1158,7 +1152,7 @@ CalendarApp.closeModal = () => {
 // --- Calendar Event Listeners Setup ---
 CalendarApp.setupEventListeners = () => {
     const {
-        addButton, taskInput, importantCheckbox, prevMonthBtn, nextMonthBtn,
+        addButton, taskInput, prevMonthBtn, nextMonthBtn,
         modalConfirmBtn, modalCancelBtn, taskDetailsModal, modalRecurringCheckbox, recurringNote
     } = CalendarApp.dom;
 
