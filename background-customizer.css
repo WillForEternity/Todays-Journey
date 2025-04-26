@@ -378,6 +378,18 @@ input:checked ~ .bg-icon.tempura,
     border: none;
 }
 
+/* Remove border and background from delete buttons in task items */
+.daily-tasks-panel.with-background-image .delete-btn {
+    background: none !important;
+    border: none !important;
+    color: rgba(0, 0, 0, 0.6) !important;
+}
+
+.daily-tasks-panel.with-background-image .delete-btn:hover {
+    color: var(--delete-button-hover-color) !important;
+    background: none !important;
+}
+
 /* Empty state */
 .daily-tasks-panel.with-background-image .empty-state {
     background-color: rgba(255, 255, 255, 0.3) !important;
