@@ -47,8 +47,15 @@ BackgroundCustomizer.closeCustomizer = () => {
 BackgroundCustomizer.handlePictureHoverIn = () => {
     const pictureEmoji = BackgroundCustomizer.dom.pictureBtn?.querySelector('.picture-emoji');
     if (pictureEmoji) {
+        // First, set up the expansion animation with a faster duration
+        pictureEmoji.style.transition = 'transform 0.2s ease';
         pictureEmoji.style.transform = 'scale(1.2)';
-        pictureEmoji.style.transition = 'transform 0.3s ease';
+        
+        // After expansion completes, add rotation
+        setTimeout(() => {
+            pictureEmoji.style.transition = 'transform 0.2s ease';
+            pictureEmoji.style.transform = 'scale(1.2) rotate(22.5deg)';
+        }, 200); // Wait for expansion to complete (200ms)
     }
 };
 
@@ -58,8 +65,9 @@ BackgroundCustomizer.handlePictureHoverIn = () => {
 BackgroundCustomizer.handlePictureHoverOut = () => {
     const pictureEmoji = BackgroundCustomizer.dom.pictureBtn?.querySelector('.picture-emoji');
     if (pictureEmoji) {
-        pictureEmoji.style.transform = 'scale(1)';
+        // Reset immediately to normal state
         pictureEmoji.style.transition = 'transform 0.3s ease';
+        pictureEmoji.style.transform = 'scale(1) rotate(0deg)';
     }
 };
 
