@@ -514,7 +514,8 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
     border: 1px solid var(--accent-color);
     font-weight: bold;
     background-clip: padding-box;
-    color: var(--accent-color);
+    background-color: var(--accent-color);
+    color: white;
 }
 .calendar-day.selected-day {
     background-color: var(--accent-color) !important;
@@ -687,6 +688,8 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: var(--border-radius);
+    transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
 }
 .folder-input-area button svg {
     width: 16px; height: 16px; stroke-width: 2.5;
