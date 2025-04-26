@@ -44,13 +44,22 @@ StickerManager.init = () => {
  * Set up event listeners
  */
 StickerManager.addEventListeners = () => {
-    const { stickerBtn, closeStickerBtn, stickerSlots, stickerUpload } = StickerManager.dom;
+    const { stickerBtn, closeStickerBtn, stickerSlots, stickerUpload, stickerModal } = StickerManager.dom;
 
     // Open sticker modal
     stickerBtn?.addEventListener('click', StickerManager.openStickerManager);
 
     // Close sticker modal
     closeStickerBtn?.addEventListener('click', StickerManager.closeStickerManager);
+    
+    // Close modal when clicking outside of it
+    stickerModal?.addEventListener('click', (e) => {
+        // Only close if the click is directly on the modal overlay
+        // not on any of its children
+        if (e.target === stickerModal) {
+            StickerManager.closeStickerManager();
+        }
+    });
 
     // Slot click handlers
     stickerSlots?.forEach(slot => {

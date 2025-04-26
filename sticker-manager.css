@@ -114,7 +114,7 @@
 .sticker-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 15px;
+    gap: 12px;
     padding: 15px 0;
     margin: 0 auto;
     max-width: 90%;
@@ -124,13 +124,14 @@
 .sticker-slot {
     position: relative;
     width: 100%;
-    padding-bottom: 100%; /* Maintain square aspect ratio */
+    padding-bottom: 100%;
     background-color: rgba(0, 0, 0, 0.05);
-    border-radius: 12px; /* Slightly more rounded corners */
+    border-radius: 12px;
     cursor: pointer;
     overflow: hidden;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 3px;
 }
 
 .sticker-slot:hover {
