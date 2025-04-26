@@ -11,6 +11,8 @@
     <!-- Link Mode-Specific Styles Last (for overrides) -->
     <link rel="stylesheet" href="cute-mode.css">
     <link rel="stylesheet" href="light-mode.css">
+    <!-- Background Customizer Styles -->
+    <link rel="stylesheet" href="background-customizer.css">
     <!-- Feather Icons via CDN -->
     <script src="https://unpkg.com/feather-icons"></script>
 </head>
@@ -25,6 +27,9 @@
         <h1 id="appTitle"></h1> <!-- Set initial text by JS -->
         <button id="settingsBtn" class="settings-button">
             <span class="gear-emoji">⚙️</span>
+        </button>
+        <button id="pictureBtn" class="picture-button">
+            <span class="picture-emoji">🖼️</span>
         </button>
     </div>
 
@@ -250,6 +255,49 @@
         </div>
     </div>
 
+    <!-- Background Customizer Modal -->
+    <div id="customizerModal" class="modal-overlay">
+        <div class="modal-dialog settings-modal">
+            <div class="settings-header">
+                <h3>Background Options</h3>
+            </div>
+            <div class="modal-content">
+                <div class="settings-group">
+                    <div class="settings-group-header">
+                        <h4>Task Area Background</h4>
+                    </div>
+                    <div class="custom-toggle-container">
+                        <span>Custom Background</span>
+                        <label class="custom-toggle">
+                            <input type="checkbox" id="customToggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <!-- Image Upload Section - Always visible -->
+                    <div class="background-upload-section">
+                        <div class="upload-preview-container">
+                            <div id="backgroundPreview" class="background-preview">
+                                <span class="upload-placeholder">Preview</span>
+                            </div>
+                        </div>
+                        <div class="upload-controls">
+                            <input type="file" id="backgroundImageInput" accept="image/*" class="file-input" hidden>
+                            <button id="backgroundUploadBtn" class="upload-button">
+                                Upload Image
+                            </button>
+                            <button id="removeBackgroundBtn" class="remove-button" disabled>
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="customizerCloseBtn" class="modal-button modal-button-confirm">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ===================== -->
     <!-- Load JavaScript Files -->
     <!-- ===================== -->
@@ -264,6 +312,8 @@
     <script src="image-handler.js"></script>
     <!-- 5. Settings module -->
     <script src="settings.js"></script>
+    <!-- 6. Background Customizer module -->
+    <script src="background-customizer.js"></script>
     <script>
         // Initialize Feather icons
         feather.replace();

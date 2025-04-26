@@ -371,7 +371,6 @@ App.setView = (viewName, skipFocus = false) => {
         App.dom.viewToggleBtn.innerHTML = isCalendar
             ? '<i data-feather="calendar"></i>' // Show Calendar icon when in Calendar view
             : '<i data-feather="book"></i>'; // Show Notes icon when in Notes view
-        App.dom.viewToggleBtn.title = isCalendar ? "Switch to Notes View" : "Switch to Calendar View";
     }
 
     // --- Refresh Icons ---
@@ -503,6 +502,14 @@ App.init = async () => {
             console.log("Settings module initialized");
         } else {
             console.warn("Settings module not found or init function missing");
+        }
+
+        // Initialize Background Customizer module if available
+        if (typeof BackgroundCustomizer !== 'undefined' && typeof BackgroundCustomizer.init === 'function') {
+            BackgroundCustomizer.init();
+            console.log("Background Customizer module initialized");
+        } else {
+            console.warn("Background Customizer module not found or init function missing");
         }
 
         document.addEventListener('keydown', (event) => {

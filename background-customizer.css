@@ -1,0 +1,246 @@
+/* --- background-customizer.css --- */
+/* Styles for the background customizer button and modal */
+
+/* Picture Button */
+.picture-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    margin-left: 8px;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.picture-emoji {
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
+
+/* Customizer Modal */
+#customizerModal.visible {
+    display: flex;
+}
+
+/* Custom Background Toggle */
+.custom-toggle-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 15px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.custom-toggle-container span {
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.custom-toggle {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 26px;
+    margin-left: 10px;
+}
+
+.custom-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.custom-toggle .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+}
+
+.custom-toggle .slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+}
+
+.custom-toggle input:checked + .slider {
+    background-color: var(--accent-color, #5ccfe6);
+}
+
+.custom-toggle input:focus + .slider {
+    box-shadow: 0 0 1px var(--accent-color, #5ccfe6);
+}
+
+.custom-toggle input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.custom-toggle .slider.round {
+    border-radius: 34px;
+}
+
+.custom-toggle .slider.round:before {
+    border-radius: 50%;
+}
+
+/* Make customizer modal more compact and consistent with settings */
+#customizerModal .modal-dialog {
+    max-width: 380px;
+}
+
+#customizerModal .settings-header {
+    padding: 12px 15px;
+    margin-bottom: 5px;
+}
+
+#customizerModal .settings-header h3 {
+    margin: 0;
+    font-size: 18px;
+    text-align: center;
+}
+
+#customizerModal .settings-group {
+    margin-bottom: 15px;
+}
+
+#customizerModal .settings-group-header h4 {
+    margin: 0 0 10px 0;
+    font-size: 15px;
+    font-weight: normal;
+    color: var(--text-color);
+    padding-bottom: 5px;
+}
+
+#customizerModal .settings-group-header::after {
+    display: none;
+}
+
+/* Modal content spacing */
+#customizerModal .modal-content {
+    padding: 10px 15px;
+}
+
+/* Close button styling */
+#customizerModal .modal-actions {
+    padding: 10px 15px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+#customizerModal .modal-button {
+    padding: 8px 15px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#customizerModal .modal-button-confirm {
+    background-color: var(--accent-color, #5ccfe6);
+    color: #000;
+}
+
+/* Background Upload Section */
+.background-upload-section {
+    margin-top: 15px;
+    padding: 15px;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.upload-preview-container {
+    margin-bottom: 15px;
+}
+
+.background-preview {
+    width: 100%;
+    height: 0;
+    padding-bottom: 66.67%; /* 2:3 aspect ratio (task panel is 2fr of 3fr total) */
+    border-radius: 4px;
+    background-color: var(--ui-bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.background-preview::before {
+    content: '';
+    position: absolute;
+    top: 30px; /* Match the task panel padding */
+    right: 30px;
+    bottom: 30px;
+    left: 30px;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.background-preview img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.upload-placeholder {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-color);
+    opacity: 0.5;
+    font-size: 14px;
+    z-index: 2;
+    text-align: center;
+    width: 100%;
+}
+
+.upload-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.upload-button, .remove-button {
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    flex: 1;
+}
+
+.upload-button {
+    background-color: var(--accent-color, #5ccfe6);
+    color: #000;
+}
+
+.remove-button {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+}
+
+.remove-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

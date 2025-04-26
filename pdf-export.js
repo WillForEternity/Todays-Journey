@@ -65,7 +65,6 @@ PDFExport.setupEventListeners = () => {
         const exportButton = document.createElement('button');
         exportButton.id = 'exportPdfBtn';
         exportButton.className = 'action-button';
-        exportButton.title = 'Export as PDF';
         exportButton.innerHTML = '<i data-feather="file-text"></i> Export PDF';
         
         // Add the button to the note editor actions
