@@ -77,7 +77,13 @@ BackgroundCustomizer.toggleCustomBackground = () => {
         console.warn("Could not save custom background preference:", e);
     }
     
-    // Future implementation: This will handle applying the custom background
+    // Apply or remove the background based on toggle state
+    if (isCustomEnabled && BackgroundCustomizer.state.backgroundImage) {
+        BackgroundCustomizer.applyBackground(BackgroundCustomizer.state.backgroundImage);
+    } else {
+        BackgroundCustomizer.removeBackgroundFromUI();
+    }
+    
     console.log(`Custom background ${isCustomEnabled ? 'enabled' : 'disabled'}`);
 };
 
@@ -140,18 +146,66 @@ BackgroundCustomizer.setBackgroundImage = (imageDataUrl) => {
     } catch (e) {
         console.warn('Failed to save background image to localStorage, it might be too large:', e);
     }
+    
+    // If the custom background is enabled, apply it right away
+    if (BackgroundCustomizer.state.customBackgroundEnabled) {
+        BackgroundCustomizer.applyBackground(imageDataUrl);
+    }
+};
+
+/**
+ * Applies the background image to the task panel.
+ * @param {string} imageDataUrl - The data URL of the image
+ */
+BackgroundCustomizer.applyBackground = (imageDataUrl) => {
+    const dailyTasksPanel = document.querySelector('.daily-tasks-panel');
+    if (!dailyTasksPanel) {
+        console.warn('Daily tasks panel not found');
+        return;
+    }
+    
+    // Apply background image to the daily tasks panel
+    dailyTasksPanel.style.backgroundImage = `url(${imageDataUrl})`;
+    dailyTasksPanel.style.backgroundSize = 'cover';
+    dailyTasksPanel.style.backgroundPosition = 'center';
+    dailyTasksPanel.style.backgroundRepeat = 'no-repeat';
+    
+    // Add a semi-transparent overlay to ensure text remains readable
+    dailyTasksPanel.classList.add('with-background-image');
+};
+
+/**
+ * Removes the background image from the UI.
+ */
+BackgroundCustomizer.removeBackgroundFromUI = () => {
+    const dailyTasksPanel = document.querySelector('.daily-tasks-panel');
+    if (!dailyTasksPanel) return;
+    
+    // Remove background image
+    dailyTasksPanel.style.backgroundImage = '';
+    dailyTasksPanel.style.backgroundSize = '';
+    dailyTasksPanel.style.backgroundPosition = '';
+    dailyTasksPanel.style.backgroundRepeat = '';
+    
+    // Remove the class that applies the overlay
+    dailyTasksPanel.classList.remove('with-background-image');
 };
 
 /**
  * Removes the background image and resets the preview.
  */
 BackgroundCustomizer.removeBackgroundImage = () => {
-    // Clear state
     BackgroundCustomizer.state.backgroundImage = null;
     
-    // Reset preview
+    // Clear preview
     const { backgroundPreview, removeBackgroundBtn } = BackgroundCustomizer.dom;
-    backgroundPreview.innerHTML = '<span class="upload-placeholder">Preview</span>';
+    backgroundPreview.innerHTML = '';
+    backgroundPreview.insertAdjacentHTML('beforeend', '<span class="upload-placeholder">Preview</span>');
+    
+    // Remove background from UI if it's enabled
+    if (BackgroundCustomizer.state.customBackgroundEnabled) {
+        BackgroundCustomizer.removeBackgroundFromUI();
+    }
     
     // Disable remove button
     removeBackgroundBtn.disabled = true;
@@ -224,6 +278,11 @@ BackgroundCustomizer.init = () => {
         const savedImageData = localStorage.getItem('backgroundImageData');
         if (savedImageData) {
             BackgroundCustomizer.setBackgroundImage(savedImageData);
+            
+            // If the custom background was enabled, apply it
+            if (BackgroundCustomizer.state.customBackgroundEnabled) {
+                BackgroundCustomizer.applyBackground(savedImageData);
+            }
         }
     } catch (e) {
         console.warn('Failed to load background image from localStorage:', e);
