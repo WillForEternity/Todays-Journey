@@ -454,7 +454,8 @@ StickerManager.createStickerInstance = (placedSticker) => {
     stickerEl.style.width = `${placedSticker.width}px`;
     stickerEl.style.height = `${placedSticker.height}px`;
     stickerEl.style.zIndex = placedSticker.zIndex;
-    stickerEl.style.transform = 'translate(-50%, -50%)'; // Center the sticker at the placement point
+    // Place sticker exactly where dropped (no centering transform)
+    stickerEl.style.transform = 'none';
     
     // Add a data attribute for the view
     stickerEl.dataset.view = placedSticker.view;
@@ -643,12 +644,13 @@ StickerManager.startMovingPlacedSticker = (initialEvent, placedSticker) => {
     const ghostEl = document.createElement('div');
     ghostEl.className = 'floating-sticker';
     ghostEl.style.position = 'fixed';
-    ghostEl.style.left = `${initialStickerX}px`;
-    ghostEl.style.top = `${initialStickerY}px`;
+    // Center ghost under cursor
+    ghostEl.style.left = `${initialEvent.clientX}px`;
+    ghostEl.style.top = `${initialEvent.clientY}px`;
     ghostEl.style.width = `${placedSticker.width}px`;
     ghostEl.style.height = `${placedSticker.height}px`;
     ghostEl.style.zIndex = '9999';
-    ghostEl.style.transform = 'translate(-50%, -50%)'; // Center the sticker at the placement point
+    ghostEl.style.transform = 'translate(-50%, -50%)'; // Center ghost under mouse
     
     // Create image for ghost
     const img = document.createElement('img');
@@ -671,16 +673,9 @@ StickerManager.startMovingPlacedSticker = (initialEvent, placedSticker) => {
     const moveGhost = (e) => {
         hasMoved = true;
         
-        // Calculate new position based on mouse movement
-        const dx = e.clientX - initialMouseX;
-        const dy = e.clientY - initialMouseY;
-        
-        const newX = initialStickerX + dx;
-        const newY = initialStickerY + dy;
-        
-        // Update ghost position
-        ghostEl.style.left = `${newX}px`;
-        ghostEl.style.top = `${newY}px`;
+        // Update ghost position under cursor
+        ghostEl.style.left = `${e.clientX}px`;
+        ghostEl.style.top = `${e.clientY}px`;
     };
     
     // Function to end movement
@@ -729,20 +724,15 @@ StickerManager.startMovingPlacedSticker = (initialEvent, placedSticker) => {
             return;
         }
         
-        // Calculate new position
-        const dx = e.clientX - initialMouseX;
-        const dy = e.clientY - initialMouseY;
+        // After validation, position sticker centered under cursor
+        const centerX = e.clientX - (placedSticker.width / 2);
+        const centerY = e.clientY - (placedSticker.height / 2);
+        placedSticker.x = centerX;
+        placedSticker.y = centerY;
+        stickerEl.style.left = `${centerX}px`;
+        stickerEl.style.top = `${centerY}px`;
         
-        const newX = initialStickerX + dx;
-        const newY = initialStickerY + dy;
-        
-        // Update sticker position in state
-        placedSticker.x = newX;
-        placedSticker.y = newY;
-        
-        // Update DOM position
-        stickerEl.style.left = `${newX}px`;
-        stickerEl.style.top = `${newY}px`;
+        // Show sticker and save new position
         stickerEl.style.visibility = 'visible';
         
         // Update state in IndexedDB
@@ -841,8 +831,8 @@ StickerManager.startDraggingSticker = (initialEvent, stickerData) => {
         const placedSticker = {
             id: `placed-sticker-${Date.now()}`,
             imageData: stickerData.imageData,
-            x: e.clientX, // Use the exact cursor position
-            y: e.clientY,
+            x: e.clientX - (100 / 2), // Center sticker under cursor
+            y: e.clientY - (100 / 2),
             width: 100,
             height: 100,
             zIndex: 1000, // High enough to be above most content

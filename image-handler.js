@@ -9,6 +9,48 @@ const ImageHandler = (() => {
     let noteContentInput = null;
     let notePreview = null;
     let imageStorage = {};
+    const DB_NAME = 'noteImagesDB', DB_VERSION = 1, STORE_NAME = 'noteImages';
+
+    // Open or upgrade IndexedDB for image storage
+    const openImageDB = () => new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = () => {
+            req.result.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+
+    // Load all stored images into memory
+    const loadImageStorage = async () => {
+        try {
+            const db = await openImageDB();
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const all = await new Promise((res, rej) => {
+                const r = store.getAll();
+                r.onsuccess = () => res(r.result);
+                r.onerror = () => rej(r.error);
+            });
+            all.forEach(item => { imageStorage[item.id] = item.data; });
+        } catch (e) {
+            console.error('Failed to load images from IndexedDB:', e);
+        }
+    };
+
+    // Save a single image to IndexedDB
+    const saveImageToDB = async (id, data) => {
+        try {
+            const db = await openImageDB();
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            tx.objectStore(STORE_NAME).put({ id, data });
+        } catch (e) {
+            console.error('Failed to save image to IndexedDB:', e);
+        }
+    };
+
+    // Load existing images on init
+    loadImageStorage();
 
     /**
      * Initialize image handling functionality
@@ -132,6 +174,7 @@ const ImageHandler = (() => {
         
         // Store the full image data in our storage object
         imageStorage[imageId] = imageData;
+        saveImageToDB(imageId, imageData);
         
         // Create a special marker for the image with just the ID
         // Format: ![image:ID]
