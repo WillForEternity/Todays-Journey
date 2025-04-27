@@ -1170,6 +1170,15 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
     display: inline;
 }
 
+.code-snippet {
+    background-color: #e0fae8;
+    color: #5764c9;
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-size: 0.9em;
+}
+
 /* Code block formatting - for triple backtick code blocks */
 .code-block {
     font-family: 'Courier New', Courier, monospace;
