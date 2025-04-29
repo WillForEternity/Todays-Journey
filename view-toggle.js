@@ -512,6 +512,14 @@ App.init = async () => {
             console.warn("Background Customizer module not found or init function missing");
         }
 
+        // Initialize Second Brain module if available
+        if (typeof SecondBrain !== 'undefined' && typeof SecondBrain.init === 'function') {
+            SecondBrain.init();
+            console.log("Second Brain module initialized");
+        } else {
+            console.warn("Second Brain module not found or init function missing");
+        }
+
         document.addEventListener('keydown', (event) => {
             // Close Calendar Task Details Modal on Escape
             if (event.key === 'Escape' && App.dom.taskDetailsModal?.classList.contains('visible')) {

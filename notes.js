@@ -29,7 +29,9 @@ NotesApp.dom = {
     confirmAddFolderBtn: document.getElementById('confirmAddFolderBtn'),
     cancelAddFolderBtn: document.getElementById('cancelAddFolderBtn'),
     notePreview: document.getElementById('notePreview'),
-    togglePreviewBtn: document.getElementById('togglePreviewBtn')
+    togglePreviewBtn: document.getElementById('togglePreviewBtn'),
+    showGuideBtn: document.getElementById('showGuideBtn'),
+    guideContainer: document.getElementById('guideContainer'),
 };
 
 // --- Notes State ---
@@ -1380,7 +1382,7 @@ NotesApp.setupEventListeners = () => {
         addRootFolderBtn, addNoteBtn, saveNoteBtn, deleteNoteBtn,
         noteTitleInput, noteContentInput,
         confirmAddFolderBtn, cancelAddFolderBtn, newFolderNameInput,
-        togglePreviewBtn
+        togglePreviewBtn, showGuideBtn
     } = NotesApp.dom;
 
     addRootFolderBtn?.addEventListener('click', () => NotesApp.showAddFolderInput(null));
@@ -1415,6 +1417,8 @@ NotesApp.setupEventListeners = () => {
             NotesApp.hideAddFolderInput(true);
         }
     });
+
+    showGuideBtn?.addEventListener('click', NotesApp.toggleGuide);
 
     // Global Keyboard Shortcuts
     document.addEventListener('keydown', (e) => {
@@ -1464,4 +1468,11 @@ NotesApp.init = async () => {
          App.setLoadingState(false); // Clear loading state specifically for notes init
     }
     return Promise.resolve(); // Signal completion
+};
+
+// Add guide toggle handler
+NotesApp.toggleGuide = () => {
+    const { guideContainer } = NotesApp.dom;
+    if (!guideContainer) return;
+    guideContainer.style.display = (guideContainer.style.display === 'none' ? '' : 'none');
 };

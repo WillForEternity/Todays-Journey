@@ -14,6 +14,8 @@
     <!-- Background Customizer Styles -->
     <link rel="stylesheet" href="background-customizer.css">
     <link rel="stylesheet" href="sticker-manager.css">
+    <!-- Second Brain Styles -->
+    <link rel="stylesheet" href="second-brain.css">
     <!-- Feather Icons via CDN -->
     <script src="https://unpkg.com/feather-icons"></script>
 </head>
@@ -125,16 +127,32 @@
                     <textarea id="noteContentInput" placeholder="Start writing your note..."></textarea>
                     <div id="notePreview" class="note-preview" style="display: none;"></div>
                     <div class="note-editor-actions">
-                         <span id="noteStatus"></span>
-                         <button id="togglePreviewBtn" class="action-button">
+                        <div class="guide-button-wrapper">
+                            <button id="showGuideBtn" class="action-button guide-button">
+                                <i data-feather="help-circle"></i> Guide
+                            </button>
+                        </div>
+                        <span id="noteStatus"></span>
+                        <button id="togglePreviewBtn" class="action-button">
                             <i data-feather="eye"></i> Preview
                         </button>
-                         <button id="saveNoteBtn" class="action-button">
+                        <button id="saveNoteBtn" class="action-button">
                             <i data-feather="save"></i> Save
                         </button>
-                         <button id="deleteNoteBtn" class="action-button">
+                        <button id="deleteNoteBtn" class="action-button">
                             <i data-feather="trash-2"></i> Delete
                         </button>
+                    </div>
+                    <!-- Formatting Guide (hidden until toggled) -->
+                    <div id="guideContainer" class="guide-container" style="display:none;">
+                        <h5>Formatting Guide</h5>
+                        <dl>
+                            <dt><code># Heading 1</code></dt>
+                            <dt><code>## Heading 2</code></dt>
+                            <dt><code>```code block```</code></dt>
+                            <dt><code>`inline`</code></dt>
+                            <dt><code>- bullet</code></dt>
+                        </dl>
                     </div>
                 </div>
             </div>
@@ -481,6 +499,8 @@
     <!-- 6. Background Customizer module -->
     <script src="background-customizer.js"></script>
     <script src="sticker-manager.js"></script>
+    <!-- 7. Second Brain module -->
+    <script src="second-brain.js"></script>
     <script>
         // Initialize Feather icons
         feather.replace();

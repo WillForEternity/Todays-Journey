@@ -250,6 +250,9 @@ const ImageHandler = (() => {
                     }
                 });
                 
+                // Highlight single-quoted references as inline code snippets
+                formatted = formatted.replace(/'([A-Za-z0-9_\/\.\-]+)'/g, (m, p1) => `<span class="code-snippet">${p1}</span>`);
+                
                 // For backward compatibility, also handle inline base64 data
                 formatted = formatted.replace(/!\[image\]\((data:image\/[^)]+)\)/g, 
                     '<div class="note-image-container"><img src="$1" class="note-image" alt="Note image"></div>');
