@@ -192,7 +192,31 @@
     height: 1.2rem;
 }
 
-/* API Settings */
+/* Chat Settings */
+.chat-settings-header {
+    padding: 0.75rem 1rem;
+    background-color: #f9f9f9;
+    border-top: 1px solid var(--border-color, #ddd);
+}
+
+.toggle-settings-button {
+    width: 100%;
+    background: none;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0;
+    font-size: 0.95rem;
+    color: #555;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.toggle-settings-button:hover {
+    color: var(--accent-color, #4a6fa5);
+}
+
 .chat-settings {
     padding: 1rem;
     background-color: #f9f9f9;
@@ -219,12 +243,19 @@
 }
 
 .settings-group input,
-.settings-group select {
+.settings-group select,
+.settings-group textarea {
     width: 100%;
     padding: 0.5rem;
     border: 1px solid var(--border-color, #ddd);
     border-radius: 0.3rem;
     font-size: 0.9rem;
+    font-family: inherit;
+}
+
+.settings-group textarea {
+    resize: vertical;
+    min-height: 60px;
 }
 
 .save-settings-button {
@@ -248,46 +279,13 @@
     font-size: 0.9rem;
 }
 
-/* Loading Indicator */
-.typing-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    height: 1.5rem;
-}
-
-.typing-indicator span {
-    height: 0.5rem;
-    width: 0.5rem;
-    float: left;
-    margin: 0 1px;
-    background-color: #9E9EA1;
-    display: block;
-    border-radius: 50%;
-    opacity: 0.4;
-}
-
-.typing-indicator span:nth-of-type(1) {
-    animation: 1s blink infinite 0.3333s;
-}
-
-.typing-indicator span:nth-of-type(2) {
-    animation: 1s blink infinite 0.6666s;
-}
-
-.typing-indicator span:nth-of-type(3) {
-    animation: 1s blink infinite 0.9999s;
-}
-
-@keyframes blink {
-    50% {
-        opacity: 1;
-    }
-}
-
 /* Dark Mode Support */
 .dark-mode .chat-container {
     background-color: #2a2a2d;
+}
+
+.dark-mode .chat-settings-header {
+    background-color: #222;
 }
 
 .dark-mode .chat-settings {
@@ -295,7 +293,8 @@
 }
 
 .dark-mode .chat-settings h4,
-.dark-mode .settings-group label {
+.dark-mode .settings-group label,
+.dark-mode .toggle-settings-button {
     color: #ccc;
 }
 
@@ -316,7 +315,8 @@
 }
 
 .dark-mode .settings-group input,
-.dark-mode .settings-group select {
+.dark-mode .settings-group select,
+.dark-mode .settings-group textarea {
     background-color: #3a3a3d;
     color: #eee;
     border-color: #555;
@@ -360,5 +360,42 @@
     
     .chat-settings {
         padding: 0.8rem;
+    }
+}
+
+/* Loading Indicator */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    height: 1.5rem;
+}
+
+.typing-indicator span {
+    height: 0.5rem;
+    width: 0.5rem;
+    float: left;
+    margin: 0 1px;
+    background-color: #9E9EA1;
+    display: block;
+    border-radius: 50%;
+    opacity: 0.4;
+}
+
+.typing-indicator span:nth-of-type(1) {
+    animation: 1s blink infinite 0.3333s;
+}
+
+.typing-indicator span:nth-of-type(2) {
+    animation: 1s blink infinite 0.6666s;
+}
+
+.typing-indicator span:nth-of-type(3) {
+    animation: 1s blink infinite 0.9999s;
+}
+
+@keyframes blink {
+    50% {
+        opacity: 1;
     }
 }

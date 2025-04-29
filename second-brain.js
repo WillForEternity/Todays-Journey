@@ -15,6 +15,10 @@ SecondBrain.dom = {
     apiProviderSelect: null,
     apiEndpointInput: null,
     saveApiSettingsButton: null,
+    systemPromptBeforeInput: null,
+    systemPromptAfterInput: null,
+    chatSettings: null,
+    toggleSettingsBtn: null,
 };
 
 // --- Second Brain State ---
@@ -25,6 +29,9 @@ SecondBrain.state = {
     apiEndpoint: 'https://api.openai.com/v1/chat/completions', // Default endpoint
     messages: [], // Chat history
     isProcessing: false,
+    systemPromptBefore: 'You are a helpful AI assistant that has access to my tasks and notes data. Use this information to provide relevant and concise answers.',
+    systemPromptAfter: 'Answer based only on the information provided in the context. Be concise and accurate.',
+    apiSettingsExpanded: false, // Whether API settings panel is expanded
 };
 
 // --- Second Brain Configuration ---
@@ -48,6 +55,7 @@ SecondBrain.config = {
     },
     MAX_CONTEXT_LENGTH: 16000, // Maximum number of tokens to send to the API
     SETTINGS_KEY: 'secondBrainSettings',
+    SYSTEM_PROMPTS_KEY: 'secondBrainSystemPrompts',
 };
 
 // --- Data Extraction Functions ---
@@ -116,8 +124,14 @@ SecondBrain.formatDataForContext = async () => {
             folderMap[folder.id] = folder.name;
         });
 
+        // Get today's date for comparison
+        const today = new Date();
+        const todayString = CalendarApp.formatDate(today);
+
         // Format tasks section
         let tasksSection = '# TASKS\n\n';
+        tasksSection += `## TODAY'S DATE: ${todayString}\n\n`;
+        
         if (tasks.length === 0) {
             tasksSection += 'No tasks found.\n\n';
         } else {
@@ -130,9 +144,26 @@ SecondBrain.formatDataForContext = async () => {
                 tasksByDate[task.date].push(task);
             });
 
+            // Helper function to parse and compare dates safely
+            const compareDates = (dateStr1, dateStr2) => {
+                // Convert YYYY-MM-DD to Date objects for proper comparison
+                const [year1, month1, day1] = dateStr1.split('-').map(Number);
+                const [year2, month2, day2] = dateStr2.split('-').map(Number);
+                
+                // Compare year first, then month, then day
+                if (year1 !== year2) return year1 - year2;
+                if (month1 !== month2) return month1 - month2;
+                return day1 - day2;
+            };
+
             // Format tasks by date
             Object.keys(tasksByDate).sort().forEach(date => {
-                tasksSection += `## Date: ${date}\n\n`;
+                const isToday = date === todayString ? ' [TODAY]' : '';
+                const isPast = compareDates(date, todayString) < 0 ? ' [PAST]' : '';
+                const isFuture = compareDates(date, todayString) > 0 ? ' [FUTURE]' : '';
+                const dateLabel = `${date}${isToday}${isPast}${isFuture}`;
+                
+                tasksSection += `## Date: ${dateLabel}\n\n`;
                 tasksByDate[date].forEach(task => {
                     const status = task.completed ? '[COMPLETED]' : '[PENDING]';
                     const important = task.important ? '[IMPORTANT]' : '';
@@ -194,6 +225,14 @@ SecondBrain.loadApiSettings = () => {
             SecondBrain.state.apiEndpoint = parsedSettings.apiEndpoint || 
                 SecondBrain.config.API_PROVIDERS[parsedSettings.apiProvider || 'openai'].defaultEndpoint;
         }
+        
+        // Load system prompts separately
+        const systemPrompts = localStorage.getItem(SecondBrain.config.SYSTEM_PROMPTS_KEY);
+        if (systemPrompts) {
+            const parsedPrompts = JSON.parse(systemPrompts);
+            SecondBrain.state.systemPromptBefore = parsedPrompts.before || SecondBrain.state.systemPromptBefore;
+            SecondBrain.state.systemPromptAfter = parsedPrompts.after || SecondBrain.state.systemPromptAfter;
+        }
     } catch (error) {
         console.error('Error loading API settings:', error);
     }
@@ -210,6 +249,13 @@ SecondBrain.saveApiSettings = () => {
             apiEndpoint: SecondBrain.state.apiEndpoint,
         };
         localStorage.setItem(SecondBrain.config.SETTINGS_KEY, JSON.stringify(settings));
+        
+        // Save system prompts separately
+        const systemPrompts = {
+            before: SecondBrain.state.systemPromptBefore,
+            after: SecondBrain.state.systemPromptAfter
+        };
+        localStorage.setItem(SecondBrain.config.SYSTEM_PROMPTS_KEY, JSON.stringify(systemPrompts));
     } catch (error) {
         console.error('Error saving API settings:', error);
     }
@@ -219,18 +265,32 @@ SecondBrain.saveApiSettings = () => {
  * Updates API settings from form inputs
  */
 SecondBrain.updateApiSettings = () => {
-    const { apiKeyInput, apiProviderSelect, apiEndpointInput } = SecondBrain.dom;
+    const { 
+        apiKeyInput, 
+        apiProviderSelect, 
+        apiEndpointInput,
+        systemPromptBeforeInput,
+        systemPromptAfterInput 
+    } = SecondBrain.dom;
     
     SecondBrain.state.apiKey = apiKeyInput.value.trim();
     SecondBrain.state.apiProvider = apiProviderSelect.value;
     SecondBrain.state.apiEndpoint = apiEndpointInput.value.trim();
+    
+    // Update system prompts if inputs exist
+    if (systemPromptBeforeInput) {
+        SecondBrain.state.systemPromptBefore = systemPromptBeforeInput.value.trim();
+    }
+    if (systemPromptAfterInput) {
+        SecondBrain.state.systemPromptAfter = systemPromptAfterInput.value.trim();
+    }
     
     SecondBrain.saveApiSettings();
     
     // Show confirmation message
     const messageEl = document.createElement('div');
     messageEl.className = 'settings-saved-message';
-    messageEl.textContent = 'API settings saved!';
+    messageEl.textContent = 'Settings saved!';
     apiKeyInput.parentNode.appendChild(messageEl);
     
     // Remove message after 3 seconds
@@ -260,12 +320,15 @@ SecondBrain.sendToLLM = async (userMessage, context) => {
     // Prepare the request body based on the provider
     let requestBody = {};
     
+    // Combine system prompts for cleaner instructions
+    const systemInstructions = `${SecondBrain.state.systemPromptBefore}\n\n${SecondBrain.state.systemPromptAfter}`;
+    
     if (apiProvider === 'openai') {
         headers['Authorization'] = `Bearer ${apiKey}`;
         requestBody = {
             model: SecondBrain.config.API_PROVIDERS.openai.defaultModel,
             messages: [
-                { role: 'system', content: 'You are a helpful assistant that has access to the user\'s tasks and notes. Use this information to provide helpful responses.' },
+                { role: 'system', content: systemInstructions },
                 { role: 'user', content: context },
                 { role: 'user', content: userMessage }
             ],
@@ -275,10 +338,16 @@ SecondBrain.sendToLLM = async (userMessage, context) => {
     } else if (apiProvider === 'anthropic') {
         headers['x-api-key'] = apiKey;
         headers['anthropic-version'] = '2023-06-01';
+        
+        // For Anthropic, we need to structure the messages differently
+        // Since it doesn't have a separate system role, we include instructions in the user message
         requestBody = {
             model: SecondBrain.config.API_PROVIDERS.anthropic.defaultModel,
             messages: [
-                { role: 'user', content: context + '\n\n' + userMessage }
+                { 
+                    role: 'user', 
+                    content: `${SecondBrain.state.systemPromptBefore}\n\nHere is the context information:\n${context}\n\nUser query: ${userMessage}\n\nRemember: ${SecondBrain.state.systemPromptAfter}`
+                }
             ],
             max_tokens: 1000
         };
@@ -288,7 +357,7 @@ SecondBrain.sendToLLM = async (userMessage, context) => {
         requestBody = {
             model: 'default-model',
             messages: [
-                { role: 'system', content: 'You are a helpful assistant that has access to the user\'s tasks and notes. Use this information to provide helpful responses.' },
+                { role: 'system', content: systemInstructions },
                 { role: 'user', content: context },
                 { role: 'user', content: userMessage }
             ],
@@ -389,8 +458,13 @@ SecondBrain.createChatModal = () => {
                     </button>
                 </div>
             </div>
-            <div class="chat-settings">
-                <h4>API Settings</h4>
+            <div class="chat-settings-header">
+                <button id="toggleSettingsBtn" class="toggle-settings-button">
+                    <span>API Settings</span>
+                    <i data-feather="chevron-down" class="settings-icon"></i>
+                </button>
+            </div>
+            <div class="chat-settings" id="chatSettings" style="display: none;">
                 <div class="settings-group">
                     <label for="apiProviderSelect">API Provider:</label>
                     <select id="apiProviderSelect">
@@ -407,6 +481,14 @@ SecondBrain.createChatModal = () => {
                     <label for="apiEndpointInput">API Endpoint:</label>
                     <input type="text" id="apiEndpointInput" placeholder="API endpoint URL">
                 </div>
+                <div class="settings-group">
+                    <label for="systemPromptBeforeInput">System Prompt Before:</label>
+                    <textarea id="systemPromptBeforeInput" placeholder="Enter the system prompt before the context" rows="2"></textarea>
+                </div>
+                <div class="settings-group">
+                    <label for="systemPromptAfterInput">System Prompt After:</label>
+                    <textarea id="systemPromptAfterInput" placeholder="Enter the system prompt after the response" rows="2"></textarea>
+                </div>
                 <button id="saveApiSettingsButton" class="save-settings-button">Save Settings</button>
             </div>
         </div>
@@ -422,7 +504,11 @@ SecondBrain.createChatModal = () => {
     SecondBrain.dom.apiKeyInput = document.getElementById('apiKeyInput');
     SecondBrain.dom.apiProviderSelect = document.getElementById('apiProviderSelect');
     SecondBrain.dom.apiEndpointInput = document.getElementById('apiEndpointInput');
+    SecondBrain.dom.systemPromptBeforeInput = document.getElementById('systemPromptBeforeInput');
+    SecondBrain.dom.systemPromptAfterInput = document.getElementById('systemPromptAfterInput');
     SecondBrain.dom.saveApiSettingsButton = document.getElementById('saveApiSettingsButton');
+    SecondBrain.dom.chatSettings = document.getElementById('chatSettings');
+    SecondBrain.dom.toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
     
     // Initialize feather icons
     App.refreshIcons();
@@ -432,7 +518,7 @@ SecondBrain.createChatModal = () => {
  * Shows the chat modal
  */
 SecondBrain.showChatModal = () => {
-    const { chatModal, apiKeyInput, apiProviderSelect, apiEndpointInput, chatInput } = SecondBrain.dom;
+    const { chatModal, apiKeyInput, apiProviderSelect, apiEndpointInput, chatInput, systemPromptBeforeInput, systemPromptAfterInput, chatSettings } = SecondBrain.dom;
     
     if (!chatModal) return;
     
@@ -441,6 +527,13 @@ SecondBrain.showChatModal = () => {
     apiProviderSelect.value = SecondBrain.state.apiProvider || 'openai';
     apiEndpointInput.value = SecondBrain.state.apiEndpoint || 
         SecondBrain.config.API_PROVIDERS[SecondBrain.state.apiProvider || 'openai'].defaultEndpoint;
+    systemPromptBeforeInput.value = SecondBrain.state.systemPromptBefore || '';
+    systemPromptAfterInput.value = SecondBrain.state.systemPromptAfter || '';
+    
+    // Set settings panel display based on state
+    if (chatSettings) {
+        chatSettings.style.display = SecondBrain.state.apiSettingsExpanded ? 'block' : 'none';
+    }
     
     // Show the modal
     chatModal.classList.add('visible');
@@ -569,6 +662,35 @@ SecondBrain.handleProviderChange = () => {
     }
 };
 
+/**
+ * Toggles the API settings panel
+ */
+SecondBrain.toggleApiSettings = () => {
+    const { chatSettings, toggleSettingsBtn } = SecondBrain.dom;
+    if (!chatSettings || !toggleSettingsBtn) return;
+    
+    const settingsIcon = toggleSettingsBtn.querySelector('.settings-icon');
+    
+    if (chatSettings.style.display === 'none') {
+        chatSettings.style.display = 'block';
+        SecondBrain.state.apiSettingsExpanded = true;
+        // Replace the icon with the up chevron
+        if (settingsIcon) {
+            settingsIcon.setAttribute('data-feather', 'chevron-up');
+        }
+    } else {
+        chatSettings.style.display = 'none';
+        SecondBrain.state.apiSettingsExpanded = false;
+        // Replace the icon with the down chevron
+        if (settingsIcon) {
+            settingsIcon.setAttribute('data-feather', 'chevron-down');
+        }
+    }
+    
+    // Re-render the Feather icons
+    App.refreshIcons();
+};
+
 // --- Event Listeners ---
 
 /**
@@ -577,7 +699,7 @@ SecondBrain.handleProviderChange = () => {
 SecondBrain.setupEventListeners = () => {
     const { 
         chatButton, chatModal, chatInput, chatSendButton,
-        apiProviderSelect, saveApiSettingsButton
+        apiProviderSelect, saveApiSettingsButton, toggleSettingsBtn
     } = SecondBrain.dom;
     
     // Chat button click
@@ -610,6 +732,9 @@ SecondBrain.setupEventListeners = () => {
     
     // Save API settings button click
     saveApiSettingsButton.addEventListener('click', SecondBrain.updateApiSettings);
+    
+    // Toggle API settings button click
+    toggleSettingsBtn.addEventListener('click', SecondBrain.toggleApiSettings);
     
     // Escape key to close modal
     document.addEventListener('keydown', (event) => {
