@@ -22,6 +22,7 @@ A single-page web application for managing your tasks and notes with a clean, in
 - Markdown formatting support
 - Image embedding capability
 - Preview mode toggle for rendered markdown
+- Last edited timestamps for notes saved and displayed
 
 ### PDF Export
 - Export notes as professionally formatted PDF documents
@@ -40,6 +41,17 @@ A single-page web application for managing your tasks and notes with a clean, in
 ### Application Settings
 - Dark/Light theme toggle with persistent preference
 - Clean settings interface with animated gear icon
+
+### AI Chat (Second Brain)
+- Chat interface powered by AI, accessing your calendar and notes
+- Clear Chat button to reset conversation (welcome message retained)
+- Configurable system prompts and API settings
+- Contextual responses using both tasks and notes data
+- Automatic inclusion of last modified timestamps
+
+### Sticker Feature
+- Upload, place, and manage stickers around your journal entries
+- Drag-and-drop placement with resizing and customization
 
 ## UI Features
 - Clean, minimalist design
