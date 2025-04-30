@@ -31,11 +31,10 @@ SecondBrain.state = {
     messages: [], // Chat history
     isProcessing: false,
     systemPromptBefore: `You are a helpful AI assistant with access to both 
-    calendar (tasks) and notes data. Without any external hints or regex, evaluate 
-    the user’s request and decide whether to use calendar data only, notes data only, 
-    both, or neither. Respond using only the selected data sections. If the user’s 
-    request does not clearly ask for data, ask a clarifying follow-up. Prioritize 
-    accuracy and brevity; do not fabricate or assume any data.`,
+    calendar (tasks) and notes data. Evaluate  the user’s request and decide whether to 
+    use calendar data only, notes data only, both, or neither. Respond using only the selected 
+    data sections. If the user’s request does not clearly ask for data, ask a clarifying 
+    follow-up. Prioritize accuracy and brevity; do not fabricate or assume any data.`,
     systemPromptAfter: 'Make sure everything is accurate.',
     apiSettingsExpanded: false, // Whether API settings panel is expanded
 };
@@ -717,20 +716,76 @@ SecondBrain.createChatButton = () => {
     const chatButton = document.createElement('button');
     chatButton.id = 'brainBtn';
     chatButton.className = 'brain-button';
-    chatButton.innerHTML = '<span class="brain-emoji">🧠</span>';
+    chatButton.innerHTML = `
+        <div class="ai-button-wrapper">
+            <div class="ai-button-rings">
+                <div class="ring ring-1"></div>
+                <div class="ring ring-2"></div>
+                <div class="ring ring-3"></div>
+            </div>
+            <div class="ai-button-core">
+                <div class="ai-glow"></div>
+                <div class="rune-container">
+                    <div class="rune rune-1">ᚠ</div>
+                    <div class="rune rune-2">ᚢ</div>
+                    <div class="rune rune-3">ᚦ</div>
+                    <div class="rune rune-4">ᚨ</div>
+                    <div class="rune rune-5">ᚱ</div>
+                </div>
+                <div class="ai-pulse"></div>
+            </div>
+        </div>
+        <span class="ai-label">Second Brain</span>
+    `;
+
+    // Add animation synchronization
+    chatButton.addEventListener('animationstart', (e) => {
+        if (e.animationName === 'rune-cycle-1' && e.target.classList.contains('rune-1')) {
+            const runes = chatButton.querySelectorAll('.rune');
+            
+            // Setup animation observers for each rune
+            const setupRuneObserver = (rune, index) => {
+                rune.addEventListener('animationiteration', (event) => {
+                    if (event.animationName === `rune-cycle-${index+1}`) {
+                        // When animation reaches the visible state
+                        const visibleTime = index * 20 + 4; // 4%, 24%, 44%, etc.
+                        const hiddenTime = index * 20 + 16; // 16%, 36%, 56%, etc.
+                        
+                        // Add active class during visible period
+                        setTimeout(() => {
+                            rune.classList.add('active');
+                        }, (visibleTime / 100) * 10000); // Convert % to ms of 10s cycle
+                        
+                        // Remove active class when hidden
+                        setTimeout(() => {
+                            rune.classList.remove('active');
+                        }, (hiddenTime / 100) * 10000); // Convert % to ms of 10s cycle
+                    }
+                });
+                
+                // Initial trigger for first cycle
+                const visibleTime = index * 20 + 4; // 4%, 24%, 44%, etc.
+                const hiddenTime = index * 20 + 16; // 16%, 36%, 56%, etc.
+                
+                setTimeout(() => {
+                    rune.classList.add('active');
+                }, (visibleTime / 100) * 10000); // Convert % to ms of 10s cycle
+                
+                setTimeout(() => {
+                    rune.classList.remove('active');
+                }, (hiddenTime / 100) * 10000); // Convert % to ms of 10s cycle
+            };
+            
+            // Setup for each rune
+            runes.forEach((rune, index) => {
+                setupRuneObserver(rune, index);
+            });
+        }
+    });
     chatButton.title = 'Second Brain';
     
-    // Insert before settings button
-    const settingsBtn = document.getElementById('settingsBtn');
-    if (settingsBtn && settingsBtn.parentNode) {
-        settingsBtn.parentNode.insertBefore(chatButton, settingsBtn);
-    } else {
-        // Fallback - append to app header
-        const appHeader = document.querySelector('.app-header');
-        if (appHeader) {
-            appHeader.appendChild(chatButton);
-        }
-    }
+    // Add to body for fixed positioning
+    document.body.appendChild(chatButton);
     
     SecondBrain.dom.chatButton = chatButton;
 };
@@ -936,7 +991,6 @@ SecondBrain.handleSendMessage = async () => {
     SecondBrain.state.isProcessing = true;
     
     try {
-        // Always include both calendar and notes; LLM prompt will direct selection
         const context = await SecondBrain.formatDataForContext(true, true);
         
         // Send to LLM

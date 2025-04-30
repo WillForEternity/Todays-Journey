@@ -115,8 +115,10 @@ body {
     margin-right: auto; /* Push to left, create space for settings button */
 }
 
-/* Settings Button Styles */
-.settings-button {
+/* Header Button Common Styles */
+.settings-button,
+.picture-button,
+.sticker-button {
     background: none;
     border: none;
     color: var(--text-color);
@@ -125,12 +127,13 @@ body {
     border-radius: var(--border-radius);
     transition: transform var(--transition-speed) ease;
     line-height: 0;
-    margin-left: 15px;
+    margin-left: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
+/* Settings Button Styles */
 .settings-button:hover {
     background-color: transparent;
 }

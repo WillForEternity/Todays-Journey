@@ -1,29 +1,319 @@
 /* --- second-brain.css --- */
 /* Styles for the Second Brain chat interface */
 
-/* Chat Button in Header */
+/* Next-Gen AI Floating Button */
 .brain-button {
-    background: none;
+    position: fixed;
+    bottom: 25px;
+    left: 25px;
     border: none;
+    background: transparent;
     cursor: pointer;
-    font-size: 1.2rem;
-    padding: 0.5rem;
-    margin: 0 0.5rem;
+    padding: 0;
+    margin: 0;
+    width: 80px;
+    height: 80px;
+    z-index: 1000;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    overflow: visible;
+}
+
+/* Button wrapper with relative positioning */
+.ai-button-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+/* Rings container */
+.ai-button-rings {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+
+/* Individual rings with different animations */
+.ring {
+    position: absolute;
     border-radius: 50%;
-    width: 2.5rem;
-    height: 2.5rem;
-    transition: background-color 0.2s ease;
+    border: 1px solid rgba(4, 164, 159, 0.3);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
+.ring-1 {
+    border-top: 2px solid var(--accent-color, #04a49f);
+    border-left: 2px solid transparent;
+    border-right: 2px solid transparent;
+    border-bottom: 2px solid var(--accent-color, #04a49f);
+    animation: spin-ring1 6s linear infinite;
+}
+
+.ring-2 {
+    top: 10%;
+    left: 10%;
+    right: 10%;
+    bottom: 10%;
+    border-top: 1px solid transparent;
+    border-left: 1px solid var(--accent-color, #04a49f);
+    border-right: 1px solid var(--accent-color, #04a49f);
+    border-bottom: 1px solid transparent;
+    animation: spin-ring2 8s linear infinite reverse;
+}
+
+.ring-3 {
+    top: 20%;
+    left: 20%;
+    right: 20%;
+    bottom: 20%;
+    border: 1px dashed rgba(255, 255, 255, 0.5);
+    animation: spin-ring3 12s linear infinite;
+    opacity: 0.7;
+}
+
+/* Button core (the central circle) */
+.ai-button-core {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #04a49f 0%, #04d7d0 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    z-index: 2;
+}
+
+/* Glow effect inside the button */
+.ai-glow {
+    position: absolute;
+    width: 150%;
+    height: 150%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 70%);
+    top: -25%;
+    left: -25%;
+    opacity: 0;
+    animation: glow-pulse 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/* Rune styling and animations */
+.rune-container {
+    position: relative;
+    z-index: 3;
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    overflow: visible;
+}
+
+.rune {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    margin-top: -2px;  /* Shift up slightly */
+    margin-left: 2px;  /* Shift right slightly */
+    color: white;
+    font-size: 22px;
+    line-height: 1;
+    font-weight: bold;
+    opacity: 0;
+    transform: scale(0) rotate(30deg);
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+    animation-duration: 10s;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+}
+
+.rune-1 {
+    animation-name: rune-cycle-1, rune-active-1;
+}
+
+.rune-2 {
+    animation-name: rune-cycle-2;
+}
+
+.rune-3 {
+    animation-name: rune-cycle-3;
+}
+
+.rune-4 {
+    animation-name: rune-cycle-4;
+}
+
+.rune-5 {
+    animation-name: rune-cycle-5;
+}
+
+@keyframes rune-cycle-1 {
+    0%, 80%, 100% { opacity: 0; transform: scale(0) rotate(30deg); }
+    2% { opacity: 0; transform: scale(0) rotate(30deg); }
+    4% { opacity: 1; transform: scale(1) rotate(0deg); }
+    4.1% { opacity: 1; transform: scale(1) rotate(0deg); }
+    16% { opacity: 1; transform: scale(1) rotate(0deg); }
+    18%, 20% { opacity: 0; transform: scale(0) rotate(-30deg); }
+}
+
+@keyframes rune-cycle-2 {
+    0%, 100% { opacity: 0; transform: scale(0) rotate(30deg); }
+    22% { opacity: 0; transform: scale(0) rotate(30deg); }
+    24%, 36% { opacity: 1; transform: scale(1) rotate(0deg); }
+    38%, 40% { opacity: 0; transform: scale(0) rotate(-30deg); }
+}
+
+@keyframes rune-cycle-3 {
+    0%, 100% { opacity: 0; transform: scale(0) rotate(30deg); }
+    42% { opacity: 0; transform: scale(0) rotate(30deg); }
+    44%, 56% { opacity: 1; transform: scale(1) rotate(0deg); }
+    58%, 60% { opacity: 0; transform: scale(0) rotate(-30deg); }
+}
+
+@keyframes rune-cycle-4 {
+    0%, 100% { opacity: 0; transform: scale(0) rotate(30deg); }
+    62% { opacity: 0; transform: scale(0) rotate(30deg); }
+    64%, 76% { opacity: 1; transform: scale(1) rotate(0deg); }
+    78%, 80% { opacity: 0; transform: scale(0) rotate(-30deg); }
+}
+
+@keyframes rune-cycle-5 {
+    0%, 100% { opacity: 0; transform: scale(0) rotate(30deg); }
+    82% { opacity: 0; transform: scale(0) rotate(30deg); }
+    84%, 96% { opacity: 1; transform: scale(1) rotate(0deg); }
+    98% { opacity: 0; transform: scale(0) rotate(-30deg); }
+}
+
+@keyframes rune-active-1 {
+    0%, 3.9%, 16.1%, 100% { }
+    4%, 16% { }
+}
+
+/* Pulse effect behind the icon */
+.ai-pulse {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    animation: none;  /* Remove default animation */
+    z-index: 1;
+}
+
+/* Synchronized pulse animations for each rune */
+.rune-1.active ~ .ai-pulse {
+    animation: pulse-expand 2s ease-out;
+    animation-delay: 0.2s;
+}
+
+.rune-2.active ~ .ai-pulse {
+    animation: pulse-expand 2s ease-out;
+    animation-delay: 2.2s;
+}
+
+.rune-3.active ~ .ai-pulse {
+    animation: pulse-expand 2s ease-out;
+    animation-delay: 4.2s;
+}
+
+.rune-4.active ~ .ai-pulse {
+    animation: pulse-expand 2s ease-out;
+    animation-delay: 6.2s;
+}
+
+.rune-5.active ~ .ai-pulse {
+    animation: pulse-expand 2s ease-out;
+    animation-delay: 8.2s;
+}
+
+/* Pulse effect behind the icon */
+@keyframes pulse-expand {
+    0% { transform: scale(0.5); opacity: 0.8; }
+    100% { transform: scale(1.5); opacity: 0; }
+}
+
+/* AI label below the button */
+.ai-label {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--accent-color, #04a49f);
+    font-weight: bold;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    white-space: nowrap;
+}
+
+/* Hover effects */
 .brain-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-5px);
 }
 
-.brain-emoji {
-    font-size: 1.4rem;
+.brain-button:hover .ai-label {
+    opacity: 1;
+}
+
+.brain-button:hover .ai-button-core {
+    box-shadow: 0 8px 24px rgba(4, 164, 159, 0.5);
+}
+
+.brain-button:active {
+    transform: translateY(0) scale(0.95);
+    transition: transform 0.1s ease;
+}
+
+/* Dark mode enhancements */
+body.dark-mode .ai-button-core {
+    background: linear-gradient(135deg, #04a49f 0%, #04d7d0 100%);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), 0 0 20px rgba(4, 164, 159, 0.3);
+}
+
+body.dark-mode .ai-label {
+    color: #04d7d0;
+    text-shadow: 0 0 8px rgba(4, 164, 159, 0.5);
+}
+
+/* Animations */
+@keyframes spin-ring1 {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes spin-ring2 {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes spin-ring3 {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes glow-pulse {
+    0% { opacity: 0; transform: scale(0.8) rotate(0deg); }
+    50% { opacity: 0.5; transform: scale(1.2) rotate(180deg); }
+    100% { opacity: 0; transform: scale(0.8) rotate(360deg); }
+}
+
+@keyframes icon-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 }
 
 /* Chat Modal */
