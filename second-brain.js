@@ -19,6 +19,7 @@ SecondBrain.dom = {
     systemPromptAfterInput: null,
     chatSettings: null,
     toggleSettingsBtn: null,
+    clearChatButton: null, // New property
 };
 
 // --- Second Brain State ---
@@ -29,8 +30,13 @@ SecondBrain.state = {
     apiEndpoint: 'https://api.openai.com/v1/chat/completions', // Default endpoint
     messages: [], // Chat history
     isProcessing: false,
-    systemPromptBefore: 'You are a helpful AI assistant that has access to my tasks and notes data. Use this information to provide relevant and concise answers.',
-    systemPromptAfter: 'Answer based only on the information provided in the context. Be concise and accurate.',
+    systemPromptBefore: `You are a helpful AI assistant with access to both 
+    calendar (tasks) and notes data. Without any external hints or regex, evaluate 
+    the user’s request and decide whether to use calendar data only, notes data only, 
+    both, or neither. Respond using only the selected data sections. If the user’s 
+    request does not clearly ask for data, ask a clarifying follow-up. Prioritize 
+    accuracy and brevity; do not fabricate or assume any data.`,
+    systemPromptAfter: 'Make sure everything is accurate.',
     apiSettingsExpanded: false, // Whether API settings panel is expanded
 };
 
@@ -40,7 +46,7 @@ SecondBrain.config = {
         openai: {
             name: 'OpenAI',
             defaultEndpoint: 'https://api.openai.com/v1/chat/completions',
-            defaultModel: 'gpt-3.5-turbo',
+            defaultModel: 'gpt-4o',
         },
         anthropic: {
             name: 'Anthropic',
@@ -68,7 +74,27 @@ SecondBrain.extractTasks = async () => {
     try {
         // Use the existing DB action to get all tasks
         const tasks = await App.dbAction(App.config.TASK_STORE_NAME, 'readonly', 'getAll');
-        return tasks || [];
+        
+        // Verify that tasks contain all expected properties
+        const validatedTasks = tasks.map(task => {
+            // Ensure all essential properties are present
+            return {
+                id: task.id || '',
+                text: task.text || '',
+                date: task.date || task.originalDate || '',
+                originalDate: task.originalDate || task.date || '',
+                completed: !!task.completed,
+                important: !!task.important,
+                time: task.time || null,
+                location: task.location || null,
+                recurring: !!task.isRecurringWeekly,
+                customColor: task.customColor || 'default',
+                createdAt: task.createdAt || 0,
+                updatedAt: task.updatedAt || 0
+            };
+        }).filter(task => task.text && (task.date || task.originalDate));
+        
+        return validatedTasks;
     } catch (error) {
         console.error('Error extracting tasks:', error);
         return [];
@@ -83,7 +109,20 @@ SecondBrain.extractNotes = async () => {
     try {
         // Use the existing DB action to get all notes
         const notes = await App.dbAction(App.config.NOTE_STORE_NAME, 'readonly', 'getAll');
-        return notes || [];
+        
+        // Verify that notes contain all expected properties
+        const validatedNotes = notes.map(note => {
+            return {
+                id: note.id || '',
+                folderId: note.folderId || '',
+                title: note.title || 'Untitled Note',
+                content: note.content || '',
+                createdAt: note.createdAt || 0,
+                lastModified: note.updatedAt || note.lastModified || note.createdAt || 0
+            };
+        }).filter(note => note.id && note.folderId);
+        
+        return validatedNotes;
     } catch (error) {
         console.error('Error extracting notes:', error);
         return [];
@@ -98,7 +137,18 @@ SecondBrain.extractFolders = async () => {
     try {
         // Use the existing DB action to get all folders
         const folders = await App.dbAction(App.config.FOLDER_STORE_NAME, 'readonly', 'getAll');
-        return folders || [];
+        
+        // Verify that folders contain all expected properties
+        const validatedFolders = folders.map(folder => {
+            return {
+                id: folder.id || '',
+                name: folder.name || 'Unnamed Folder',
+                parentId: folder.parentId, // Can be null for root folders
+                createdAt: folder.createdAt || 0
+            };
+        }).filter(folder => folder.id && folder.name);
+        
+        return validatedFolders;
     } catch (error) {
         console.error('Error extracting folders:', error);
         return [];
@@ -107,11 +157,13 @@ SecondBrain.extractFolders = async () => {
 
 /**
  * Formats task and note data into a structured context for the LLM
+ * @param {boolean} includeCalendar - Whether to include calendar data
+ * @param {boolean} includeNotes - Whether to include notes data
  * @returns {Promise<string>} Formatted context string
  */
-SecondBrain.formatDataForContext = async () => {
+SecondBrain.formatDataForContext = async (includeCalendar = true, includeNotes = true) => {
     try {
-        // Extract all data
+        // Extract all data with validation
         const [tasks, notes, folders] = await Promise.all([
             SecondBrain.extractTasks(),
             SecondBrain.extractNotes(),
@@ -124,86 +176,341 @@ SecondBrain.formatDataForContext = async () => {
             folderMap[folder.id] = folder.name;
         });
 
-        // Get today's date for comparison
-        const today = new Date();
-        const todayString = CalendarApp.formatDate(today);
-
-        // Format tasks section
-        let tasksSection = '# TASKS\n\n';
-        tasksSection += `## TODAY'S DATE: ${todayString}\n\n`;
+        // Get current date information
+        const currentDate = new Date();
+        const today = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+        const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
         
-        if (tasks.length === 0) {
-            tasksSection += 'No tasks found.\n\n';
-        } else {
-            // Group tasks by date
-            const tasksByDate = {};
-            tasks.forEach(task => {
-                if (!tasksByDate[task.date]) {
-                    tasksByDate[task.date] = [];
-                }
-                tasksByDate[task.date].push(task);
-            });
+        // Format for display
+        const currentDateFormatted = currentDate.toLocaleDateString('en-US', { 
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
+        });
+        const currentTimeFormatted = currentDate.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
 
-            // Helper function to parse and compare dates safely
-            const compareDates = (dateStr1, dateStr2) => {
-                // Convert YYYY-MM-DD to Date objects for proper comparison
-                const [year1, month1, day1] = dateStr1.split('-').map(Number);
-                const [year2, month2, day2] = dateStr2.split('-').map(Number);
-                
-                // Compare year first, then month, then day
-                if (year1 !== year2) return year1 - year2;
-                if (month1 !== month2) return month1 - month2;
-                return day1 - day2;
-            };
+        let context = '';
+        
+        // Add current date information at the top
+        context += `CURRENT DATE: ${currentDateFormatted}\n`;
+        context += `CURRENT TIME: ${currentTimeFormatted}\n\n`;
 
-            // Format tasks by date
-            Object.keys(tasksByDate).sort().forEach(date => {
-                const isToday = date === todayString ? ' [TODAY]' : '';
-                const isPast = compareDates(date, todayString) < 0 ? ' [PAST]' : '';
-                const isFuture = compareDates(date, todayString) > 0 ? ' [FUTURE]' : '';
-                const dateLabel = `${date}${isToday}${isPast}${isFuture}`;
+        // Organize tasks section
+        if (includeCalendar) {
+            if (tasks.length > 0) {
+                context += 'TASKS:\n';
                 
-                tasksSection += `## Date: ${dateLabel}\n\n`;
-                tasksByDate[date].forEach(task => {
-                    const status = task.completed ? '[COMPLETED]' : '[PENDING]';
-                    const important = task.important ? '[IMPORTANT]' : '';
-                    const recurring = task.recurring ? '[RECURRING]' : '';
-                    const time = task.time ? `Time: ${task.time}` : '';
-                    const location = task.location ? `Location: ${task.location}` : '';
+                // Group tasks by date, handling both recurring and non-recurring
+                const tasksByDate = {};
+                
+                tasks.forEach(task => {
+                    // Use the correct date field
+                    const dateKey = task.date || task.originalDate || '';
+                    if (!dateKey) return; // Skip tasks without date
                     
-                    tasksSection += `- ${status} ${important} ${recurring} ${task.text} ${time} ${location}\n`;
+                    if (!tasksByDate[dateKey]) {
+                        tasksByDate[dateKey] = [];
+                    }
+                    tasksByDate[dateKey].push(task);
+                    
+                    // For recurring tasks, also add them to future dates if they match pattern
+                    if (task.recurring && task.originalDate) {
+                        // Add recurring instances for the next 4 weeks for visualization
+                        const originalDate = new Date(task.originalDate + 'T00:00:00');
+                        if (!isNaN(originalDate.getTime())) {
+                            for (let i = 1; i <= 4; i++) {
+                                const futureDate = new Date(originalDate);
+                                futureDate.setDate(futureDate.getDate() + (i * 7)); // Weekly recurrence
+                                const futureDateStr = futureDate.toISOString().split('T')[0];
+                                
+                                // Skip if it would create duplication in the future
+                                if (futureDateStr === dateKey) continue;
+                                
+                                // Only add future dates if they're within a reasonable range (4 weeks)
+                                const timeDiff = futureDate.getTime() - today.getTime();
+                                const dayDiff = Math.round(timeDiff / (1000 * 60 * 60 * 24));
+                                if (dayDiff >= 0 && dayDiff <= 28) {
+                                    if (!tasksByDate[futureDateStr]) {
+                                        tasksByDate[futureDateStr] = [];
+                                    }
+                                    // Create a virtual instance of the recurring task
+                                    const recurringInstance = {
+                                        ...task,
+                                        date: futureDateStr,
+                                        isVirtualRecurringInstance: true
+                                    };
+                                    tasksByDate[futureDateStr].push(recurringInstance);
+                                }
+                            }
+                        }
+                    }
                 });
-                tasksSection += '\n';
-            });
-        }
-
-        // Format notes section
-        let notesSection = '# NOTES\n\n';
-        if (notes.length === 0) {
-            notesSection += 'No notes found.\n\n';
-        } else {
-            // Group notes by folder
-            const notesByFolder = {};
-            notes.forEach(note => {
-                if (!notesByFolder[note.folderId]) {
-                    notesByFolder[note.folderId] = [];
-                }
-                notesByFolder[note.folderId].push(note);
-            });
-
-            // Format notes by folder
-            Object.keys(notesByFolder).forEach(folderId => {
-                const folderName = folderMap[folderId] || 'Unfiled';
-                notesSection += `## Folder: ${folderName}\n\n`;
                 
-                notesByFolder[folderId].forEach(note => {
-                    notesSection += `### ${note.title}\n`;
-                    notesSection += `${note.content}\n\n`;
+                // Process each date's tasks
+                Object.keys(tasksByDate).sort().forEach(date => {
+                    // Calculate relationship to today
+                    let dateRelation = '';
+                    
+                    try {
+                        const taskDate = new Date(date + 'T00:00:00');
+                        const diffTime = taskDate.getTime() - today.getTime();
+                        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        if (diffDays === 0) {
+                            dateRelation = ' (TODAY)';
+                        } else if (diffDays === 1) {
+                            dateRelation = ' (TOMORROW)';
+                        } else if (diffDays === -1) {
+                            dateRelation = ' (YESTERDAY)';
+                        } else if (diffDays > 1 && diffDays < 7) {
+                            dateRelation = ` (THIS WEEK, in ${diffDays} days)`;
+                        } else if (diffDays < 0 && diffDays > -7) {
+                            dateRelation = ` (LAST WEEK, ${Math.abs(diffDays)} days ago)`;
+                        } else if (diffDays >= 7 && diffDays < 14) {
+                            dateRelation = ' (NEXT WEEK)';
+                        }
+                    } catch (e) {
+                        // In case of date parsing errors
+                        dateRelation = '';
+                    }
+                    
+                    // Format date more readably
+                    const dateObj = new Date(date);
+                    const formattedDate = dateObj.toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric',
+                        year: 'numeric'
+                    });
+                    
+                    context += `  ${formattedDate}${dateRelation}:\n`;
+                    
+                    // Count completed and pending tasks
+                    const completedTasks = tasksByDate[date].filter(t => t.completed);
+                    const pendingTasks = tasksByDate[date].filter(t => !t.completed);
+                    
+                    // Display important tasks first
+                    const importantPending = pendingTasks.filter(t => t.important);
+                    const normalPending = pendingTasks.filter(t => !t.important);
+                    
+                    // Add important pending tasks
+                    if (importantPending.length > 0) {
+                        importantPending.forEach(task => {
+                            const recurring = task.recurring ? '(recurring)' : '';
+                            const time = task.time ? `@${task.time}` : '';
+                            const location = task.location ? `at ${task.location}` : '';
+                            context += `    ⭐ ${task.text} ${time} ${location} ${recurring}\n`;
+                        });
+                    }
+                    
+                    // Add normal pending tasks
+                    if (normalPending.length > 0) {
+                        normalPending.forEach(task => {
+                            const recurring = task.recurring ? '(recurring)' : '';
+                            const time = task.time ? `@${task.time}` : '';
+                            const location = task.location ? `at ${task.location}` : '';
+                            context += `    • ${task.text} ${time} ${location} ${recurring}\n`;
+                        });
+                    }
+                    
+                    // Add completed tasks (summarized if many)
+                    if (completedTasks.length > 0) {
+                        if (completedTasks.length <= 3) {
+                            completedTasks.forEach(task => {
+                                context += `    ✓ ${task.text}\n`;
+                            });
+                        } else {
+                            context += `    ✓ ${completedTasks.length} completed tasks\n`;
+                        }
+                    }
+                    
+                    context += '\n';
                 });
-            });
+            } else {
+                context += 'TASKS: None\n\n';
+            }
         }
 
-        return tasksSection + notesSection;
+        // Organize notes section
+        if (includeNotes) {
+            if (notes.length > 0) {
+                context += 'NOTES:\n';
+                
+                // Build folder hierarchy
+                const folderHierarchy = {};
+                const rootFolders = [];
+                
+                // First pass: create folder objects with children arrays
+                folders.forEach(folder => {
+                    folderHierarchy[folder.id] = {
+                        ...folder,
+                        children: [],
+                        notes: []
+                    };
+                });
+                
+                // Second pass: link children to parents
+                folders.forEach(folder => {
+                    if (folder.parentId === null || folder.parentId === undefined) {
+                        rootFolders.push(folderHierarchy[folder.id]);
+                    } else if (folderHierarchy[folder.parentId]) {
+                        folderHierarchy[folder.parentId].children.push(folderHierarchy[folder.id]);
+                    } else {
+                        // Orphaned folder, treat as root
+                        rootFolders.push(folderHierarchy[folder.id]);
+                    }
+                });
+                
+                // Assign notes to their folders
+                notes.forEach(note => {
+                    if (folderHierarchy[note.folderId]) {
+                        folderHierarchy[note.folderId].notes.push(note);
+                    }
+                });
+                
+                // Sort notes by lastModified date
+                Object.values(folderHierarchy).forEach(folder => {
+                    folder.notes.sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0));
+                });
+                
+                // Generate folder output recursively
+                const processFolderHierarchy = (folder, depth = 1) => {
+                    const indent = '  '.repeat(depth);
+                    
+                    // Output folder name
+                    context += `${indent}${folder.name}:\n`;
+                    
+                    // Process notes in this folder
+                    if (folder.notes.length > 0) {
+                        folder.notes.forEach(note => {
+                            // Add note title
+                            context += `${indent}  "${note.title}":\n`;
+                            
+                            // Compress note content
+                            let content = note.content || '';
+                            
+                            // Remove excessive whitespace
+                            content = content.replace(/\n{3,}/g, '\n\n');
+                            
+                            // Extract key information: first paragraph and any lists or code blocks
+                            const lines = content.split('\n');
+                            let firstParagraph = '';
+                            const keyLines = [];
+                            
+                            // Find the first non-empty paragraph
+                            for (let i = 0; i < lines.length; i++) {
+                                if (lines[i].trim() !== '') {
+                                    // Check if it's a heading, bullet point, etc.
+                                    if (!lines[i].startsWith('#') && !lines[i].startsWith('-') && !lines[i].startsWith('*')) {
+                                        firstParagraph = lines[i];
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // Collect headings, bullet points, and code blocks
+                            let inCodeBlock = false;
+                            for (let i = 0; i < lines.length; i++) {
+                                const line = lines[i].trim();
+                                if (line.startsWith('```')) {
+                                    inCodeBlock = !inCodeBlock;
+                                    keyLines.push(line);
+                                } else if (inCodeBlock || line.startsWith('#') || line.startsWith('-') || line.startsWith('*')) {
+                                    keyLines.push(line);
+                                }
+                            }
+                            
+                            // Add first paragraph if it exists
+                            if (firstParagraph) {
+                                context += `${indent}    ${firstParagraph}\n`;
+                            }
+                            
+                            // Add summary of key lines if they exist
+                            if (keyLines.length > 0) {
+                                // If there are many key lines, summarize them
+                                if (keyLines.length > 10) {
+                                    // Count headings
+                                    const headings = keyLines.filter(l => l.startsWith('#')).length;
+                                    // Count list items
+                                    const listItems = keyLines.filter(l => l.startsWith('-') || l.startsWith('*')).length;
+                                    // Count code blocks (pairs of ```)
+                                    const codeBlocks = keyLines.filter(l => l.startsWith('```')).length / 2;
+                                    
+                                    context += `${indent}    [Contains ${headings} headings, ${listItems} list items, ${codeBlocks} code blocks]\n`;
+                                } else {
+                                    // Add a few representative key lines
+                                    let headingFound = false;
+                                    for (let i = 0; i < Math.min(keyLines.length, 5); i++) {
+                                        if (keyLines[i].startsWith('#')) {
+                                            headingFound = true;
+                                            context += `${indent}    ${keyLines[i]}\n`;
+                                        }
+                                    }
+                                    
+                                    if (!headingFound && keyLines.length > 0) {
+                                        // Add a representative bullet point if no headings
+                                        const bulletLine = keyLines.find(l => l.startsWith('-') || l.startsWith('*'));
+                                        if (bulletLine) {
+                                            context += `${indent}    ${bulletLine} ...\n`;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Add note metadata
+                            if (note.lastModified) {
+                                const lmDate = new Date(note.lastModified);
+                                const lastModifiedDate = lmDate.toLocaleDateString('en-US', {
+                                    month: 'short', day: 'numeric', year: 'numeric'
+                                });
+                                const lastModifiedTime = lmDate.toLocaleTimeString('en-US', {
+                                    hour: '2-digit', minute: '2-digit'
+                                });
+                                context += `${indent}    [Last modified: ${lastModifiedDate} ${lastModifiedTime}]\n`;
+                            }
+                            
+                            context += '\n';
+                        });
+                    }
+                    
+                    // Process subfolders
+                    if (folder.children.length > 0) {
+                        folder.children.forEach(child => {
+                            processFolderHierarchy(child, depth + 1);
+                        });
+                    }
+                };
+                
+                // Generate output for all root folders
+                rootFolders.forEach(folder => {
+                    processFolderHierarchy(folder);
+                });
+                
+            } else {
+                context += 'NOTES: None\n';
+            }
+        }
+
+        // Add data statistics to help the model understand the scale
+        const stats = {
+            totalTasks: tasks.length,
+            completedTasks: tasks.filter(t => t.completed).length,
+            pendingTasks: tasks.filter(t => !t.completed).length,
+            importantTasks: tasks.filter(t => t.important).length,
+            recurringTasks: tasks.filter(t => t.recurring).length,
+            totalNotes: notes.length,
+            totalFolders: folders.length
+        };
+        
+        context += '\nSUMMARY STATISTICS:\n';
+        context += `  Total Tasks: ${stats.totalTasks} (${stats.completedTasks} completed, ${stats.pendingTasks} pending, ${stats.importantTasks} important, ${stats.recurringTasks} recurring)\n`;
+        context += `  Total Notes: ${stats.totalNotes} in ${stats.totalFolders} folders\n`;
+
+        return context;
     } catch (error) {
         console.error('Error formatting data for context:', error);
         return '# ERROR\nThere was an error retrieving your data.';
@@ -230,8 +537,12 @@ SecondBrain.loadApiSettings = () => {
         const systemPrompts = localStorage.getItem(SecondBrain.config.SYSTEM_PROMPTS_KEY);
         if (systemPrompts) {
             const parsedPrompts = JSON.parse(systemPrompts);
-            SecondBrain.state.systemPromptBefore = parsedPrompts.before || SecondBrain.state.systemPromptBefore;
-            SecondBrain.state.systemPromptAfter = parsedPrompts.after || SecondBrain.state.systemPromptAfter;
+            if (parsedPrompts.before) {
+                SecondBrain.state.systemPromptBefore = parsedPrompts.before;
+            }
+            if (parsedPrompts.after) {
+                SecondBrain.state.systemPromptAfter = parsedPrompts.after;
+            }
         }
     } catch (error) {
         console.error('Error loading API settings:', error);
@@ -277,11 +588,12 @@ SecondBrain.updateApiSettings = () => {
     SecondBrain.state.apiProvider = apiProviderSelect.value;
     SecondBrain.state.apiEndpoint = apiEndpointInput.value.trim();
     
-    // Update system prompts if inputs exist
-    if (systemPromptBeforeInput) {
+    // Update system prompts from inputs
+    if (systemPromptBeforeInput && systemPromptBeforeInput.value.trim()) {
         SecondBrain.state.systemPromptBefore = systemPromptBeforeInput.value.trim();
     }
-    if (systemPromptAfterInput) {
+    
+    if (systemPromptAfterInput && systemPromptAfterInput.value.trim()) {
         SecondBrain.state.systemPromptAfter = systemPromptAfterInput.value.trim();
     }
     
@@ -306,7 +618,7 @@ SecondBrain.updateApiSettings = () => {
  * @returns {Promise<string>} The LLM's response
  */
 SecondBrain.sendToLLM = async (userMessage, context) => {
-    const { apiKey, apiProvider, apiEndpoint } = SecondBrain.state;
+    const { apiKey, apiProvider, apiEndpoint, systemPromptBefore, systemPromptAfter } = SecondBrain.state;
     
     if (!apiKey) {
         throw new Error('API key is required. Please set it in the settings.');
@@ -320,15 +632,15 @@ SecondBrain.sendToLLM = async (userMessage, context) => {
     // Prepare the request body based on the provider
     let requestBody = {};
     
-    // Combine system prompts for cleaner instructions
-    const systemInstructions = `${SecondBrain.state.systemPromptBefore}\n\n${SecondBrain.state.systemPromptAfter}`;
+    // Create a combined message that includes the instruction to follow the system prompt after
+    const combinedSystemPrompt = `${systemPromptBefore}\n\nAfter providing your response, follow this instruction but DO NOT include it in your response: ${systemPromptAfter}`;
     
     if (apiProvider === 'openai') {
         headers['Authorization'] = `Bearer ${apiKey}`;
         requestBody = {
             model: SecondBrain.config.API_PROVIDERS.openai.defaultModel,
             messages: [
-                { role: 'system', content: systemInstructions },
+                { role: 'system', content: combinedSystemPrompt },
                 { role: 'user', content: context },
                 { role: 'user', content: userMessage }
             ],
@@ -338,16 +650,10 @@ SecondBrain.sendToLLM = async (userMessage, context) => {
     } else if (apiProvider === 'anthropic') {
         headers['x-api-key'] = apiKey;
         headers['anthropic-version'] = '2023-06-01';
-        
-        // For Anthropic, we need to structure the messages differently
-        // Since it doesn't have a separate system role, we include instructions in the user message
         requestBody = {
             model: SecondBrain.config.API_PROVIDERS.anthropic.defaultModel,
             messages: [
-                { 
-                    role: 'user', 
-                    content: `${SecondBrain.state.systemPromptBefore}\n\nHere is the context information:\n${context}\n\nUser query: ${userMessage}\n\nRemember: ${SecondBrain.state.systemPromptAfter}`
-                }
+                { role: 'user', content: `${combinedSystemPrompt}\n\n${context}\n\n${userMessage}` }
             ],
             max_tokens: 1000
         };
@@ -357,7 +663,7 @@ SecondBrain.sendToLLM = async (userMessage, context) => {
         requestBody = {
             model: 'default-model',
             messages: [
-                { role: 'system', content: systemInstructions },
+                { role: 'system', content: combinedSystemPrompt },
                 { role: 'user', content: context },
                 { role: 'user', content: userMessage }
             ],
@@ -441,6 +747,7 @@ SecondBrain.createChatModal = () => {
         <div class="modal-dialog chat-modal">
             <div class="chat-header">
                 <h3>Second Brain</h3>
+                <button id="clearChatButton" class="clear-chat-button">Clear Chat</button>
                 <button class="close-button">&times;</button>
             </div>
             <div class="chat-container">
@@ -509,6 +816,7 @@ SecondBrain.createChatModal = () => {
     SecondBrain.dom.saveApiSettingsButton = document.getElementById('saveApiSettingsButton');
     SecondBrain.dom.chatSettings = document.getElementById('chatSettings');
     SecondBrain.dom.toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
+    SecondBrain.dom.clearChatButton = document.getElementById('clearChatButton'); // New property
     
     // Initialize feather icons
     App.refreshIcons();
@@ -527,6 +835,8 @@ SecondBrain.showChatModal = () => {
     apiProviderSelect.value = SecondBrain.state.apiProvider || 'openai';
     apiEndpointInput.value = SecondBrain.state.apiEndpoint || 
         SecondBrain.config.API_PROVIDERS[SecondBrain.state.apiProvider || 'openai'].defaultEndpoint;
+        
+    // Always load the current system prompts from state (which includes user customizations)
     systemPromptBeforeInput.value = SecondBrain.state.systemPromptBefore || '';
     systemPromptAfterInput.value = SecondBrain.state.systemPromptAfter || '';
     
@@ -626,8 +936,8 @@ SecondBrain.handleSendMessage = async () => {
     SecondBrain.state.isProcessing = true;
     
     try {
-        // Get context data
-        const context = await SecondBrain.formatDataForContext();
+        // Always include both calendar and notes; LLM prompt will direct selection
+        const context = await SecondBrain.formatDataForContext(true, true);
         
         // Send to LLM
         const response = await SecondBrain.sendToLLM(message, context);
@@ -691,6 +1001,22 @@ SecondBrain.toggleApiSettings = () => {
     App.refreshIcons();
 };
 
+/**
+ * Clears the chat history
+ */
+SecondBrain.clearChatHistory = () => {
+    const { chatMessages } = SecondBrain.dom;
+    if (!chatMessages) return;
+    
+    // Preserve the initial system welcome message
+    const systemMsgEl = chatMessages.querySelector('.system-message');
+    const systemHTML = systemMsgEl ? systemMsgEl.outerHTML : '';
+    chatMessages.innerHTML = systemHTML;
+    
+    // Reset messages state
+    SecondBrain.state.messages = [];
+};
+
 // --- Event Listeners ---
 
 /**
@@ -699,7 +1025,8 @@ SecondBrain.toggleApiSettings = () => {
 SecondBrain.setupEventListeners = () => {
     const { 
         chatButton, chatModal, chatInput, chatSendButton,
-        apiProviderSelect, saveApiSettingsButton, toggleSettingsBtn
+        apiProviderSelect, saveApiSettingsButton, toggleSettingsBtn,
+        clearChatButton // New property
     } = SecondBrain.dom;
     
     // Chat button click
@@ -735,6 +1062,9 @@ SecondBrain.setupEventListeners = () => {
     
     // Toggle API settings button click
     toggleSettingsBtn.addEventListener('click', SecondBrain.toggleApiSettings);
+    
+    // Clear chat button click
+    clearChatButton.addEventListener('click', SecondBrain.clearChatHistory);
     
     // Escape key to close modal
     document.addEventListener('keydown', (event) => {

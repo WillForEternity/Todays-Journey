@@ -76,6 +76,22 @@
     background-color: rgba(255, 255, 255, 0.2);
 }
 
+.clear-chat-button {
+    background: transparent;
+    border: 1px solid white;
+    color: white;
+    font-size: 0.9rem;
+    padding: 0.3rem 0.6rem;
+    margin-right: 0.5rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.clear-chat-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
 /* Chat Container */
 .chat-container {
     flex: 1;

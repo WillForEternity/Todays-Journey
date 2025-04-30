@@ -991,10 +991,13 @@ NotesApp.handleSaveNote = async () => {
         if (selectedLi) selectedLi.classList.add('selected');
 
         // Update status message
-        noteStatus.textContent = 'Saved!';
+        const saveTime = new Date();
+        const datePart = saveTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const timePart = saveTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        noteStatus.textContent = `Saved at ${datePart} ${timePart}`;
         clearTimeout(NotesApp.state.noteChangeTimeout);
         NotesApp.state.noteChangeTimeout = setTimeout(() => {
-            if (noteStatus.textContent === 'Saved!') noteStatus.textContent = ''; // Clear after delay
+            if (noteStatus.textContent.startsWith('Saved at')) noteStatus.textContent = ''; // Clear after delay
         }, NotesApp.config.NOTE_SAVE_DEBOUNCE);
         // Save button remains disabled as the current state matches the editor
 
