@@ -821,7 +821,7 @@ SecondBrain.createChatModal = () => {
                 <h3>Second Brain</h3>
                 <button id="clearChatButton" class="clear-chat-button">Clear Chat</button>
                 <button class="close-button">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 6L6 18M6 6l12 12"></path>
                     </svg>
                 </button>

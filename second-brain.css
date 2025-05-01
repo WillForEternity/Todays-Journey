@@ -330,7 +330,7 @@ body.dark-mode .ai-label {
         #04a49f 100%
     );
     background-size: 400% 400%;
-    animation: gradient-shift 15s ease infinite;
+    animation: gradient-shift 8s ease infinite;
     z-index: 0;
 }
 
@@ -392,25 +392,18 @@ body.dark-mode .ai-label {
     background: none;
     border: none;
     color: white;
-    font-size: 1.2rem;
     cursor: pointer;
-    padding: 0.4rem;
-    width: 2.2rem;
-    height: 2.2rem;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
     transition: all 0.2s ease;
     position: relative;
     z-index: 1;
     justify-self: end;
-    backdrop-filter: blur(5px);
-    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .close-button:hover {
-    background-color: rgba(255, 255, 255, 0.25);
     transform: rotate(90deg);
 }
 
@@ -418,10 +411,12 @@ body.dark-mode .ai-label {
     stroke: white;
     stroke-width: 2;
     transition: all 0.2s ease;
+    width: 20px;
+    height: 20px;
 }
 
 .close-button:hover svg {
-    stroke-width: 2.5;
+    stroke-width: 3;
 }
 
 /* Chat Container */
@@ -457,7 +452,6 @@ body.dark-mode .ai-label {
 .dark-mode .chat-messages::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.2);
 }
-
 
 .chat-message {
     display: flex;
@@ -599,6 +593,11 @@ body.dark-mode .ai-label {
     gap: 0.5rem;
 }
 
+.dark-mode .chat-input-area {
+    background-color: var(--bg-color-dark, #222);
+    border-top-color: var(--border-color-dark, #444);
+}
+
 /* Chat Input Container (Flex wrapper for input and button) */
 .chat-input-container {
     display: flex;
@@ -627,6 +626,20 @@ body.dark-mode .ai-label {
     box-shadow: 0 0 0 2px rgba(4, 164, 159, 0.2); /* Focus ring */
 }
 
+.dark-mode #chatInput {
+    background-color: #4a4a4d; /* Dark input background */
+    color: #eee;
+    border-color: #555;
+}
+.dark-mode #chatInput::placeholder {
+    color: #aaa;
+}
+.dark-mode #chatInput:focus {
+     outline: none;
+     border-color: var(--accent-color, #04a49f);
+     box-shadow: 0 0 0 2px rgba(4, 164, 159, 0.3); /* Adjusted focus ring for dark */
+}
+
 .chat-send-button {
     background-color: var(--accent-color, #04a49f);
     color: white;
@@ -651,6 +664,10 @@ body.dark-mode .ai-label {
 .chat-send-button:disabled {
     background-color: #ccc;
     cursor: not-allowed;
+}
+
+.dark-mode .chat-send-button:disabled {
+    background-color: #555;
 }
 
 .chat-send-button svg {
@@ -712,6 +729,11 @@ body.dark-mode .ai-label {
     padding-bottom: 0;
 }
 
+.dark-mode .chat-settings {
+    background-color: #2a2a2d; /* Darker than main background */
+    border-top: 1px solid var(--border-color-dark, #444);
+}
+
 /* When settings are expanded */
 .chat-settings.expanded {
     max-height: 400px; /* Adjust based on content */
@@ -745,6 +767,10 @@ body.dark-mode .ai-label {
     font-weight: 600;
 }
 
+.dark-mode .chat-settings h4 {
+    color: #ddd;
+}
+
 .settings-group {
     margin-bottom: 1rem;
 }
@@ -757,7 +783,10 @@ body.dark-mode .ai-label {
     margin-bottom: 0.4rem;
     font-size: 0.85rem;
     color: #666;
-    font-weight: 500;
+}
+
+.dark-mode .settings-group label {
+    color: #bbb;
 }
 
 .settings-group input[type="text"],
@@ -773,6 +802,7 @@ body.dark-mode .ai-label {
     background-color: #fff;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
+
 .settings-group input:focus,
 .settings-group select:focus,
 .settings-group textarea:focus {
@@ -781,11 +811,31 @@ body.dark-mode .ai-label {
      box-shadow: 0 0 0 2px rgba(4, 164, 159, 0.2);
 }
 
-
 .settings-group textarea {
     resize: vertical;
     min-height: 50px; /* Smaller min height */
     line-height: 1.4;
+}
+
+.dark-mode .settings-group input[type="text"],
+.dark-mode .settings-group input[type="number"],
+.dark-mode .settings-group select,
+.dark-mode .settings-group textarea {
+    background-color: #3a3a3d;
+    color: #eee;
+    border-color: #555;
+}
+
+.dark-mode .settings-group input::placeholder,
+.dark-mode .settings-group textarea::placeholder {
+    color: #999;
+}
+
+.dark-mode .settings-group input:focus,
+.dark-mode .settings-group select:focus,
+.dark-mode .settings-group textarea:focus {
+    border-color: var(--accent-color, #04a49f);
+    box-shadow: 0 0 0 2px rgba(4, 164, 159, 0.3);
 }
 
 .save-settings-button {
@@ -809,6 +859,10 @@ body.dark-mode .ai-label {
     color: #388e3c; /* Success color */
     font-size: 0.85rem;
     display: inline-block; /* Keep it on the same line if space allows */
+}
+
+.dark-mode .settings-saved-message {
+    color: #81c784; /* Lighter green for dark mode */
 }
 
 /* Clearfix for float */
@@ -862,8 +916,8 @@ body.dark-mode .ai-label {
 
 
 .dark-mode .chat-input-area {
-    background-color: #333; /* Darker input area */
-    border-top-color: #444;
+    background-color: var(--bg-color-dark, #222);
+    border-top-color: var(--border-color-dark, #444);
 }
 
 .dark-mode #chatInput {
@@ -908,10 +962,6 @@ body.dark-mode .ai-label {
 .dark-mode .settings-group textarea:focus {
     border-color: var(--accent-color, #04a49f);
     box-shadow: 0 0 0 2px rgba(4, 164, 159, 0.3);
-}
-
-.dark-mode .settings-saved-message {
-    color: #81c784; /* Lighter success green */
 }
 
 /* Cute Mode Support (Overrides) */
