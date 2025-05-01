@@ -20,6 +20,7 @@ SecondBrain.dom = {
     chatSettings: null,
     toggleSettingsBtn: null,
     clearChatButton: null, // New property
+    settingsSavedMessage: null, // New property
 };
 
 // --- Second Brain State ---
@@ -30,11 +31,24 @@ SecondBrain.state = {
     apiEndpoint: 'https://api.openai.com/v1/chat/completions', // Default endpoint
     messages: [], // Chat history
     isProcessing: false,
-    systemPromptBefore: `You are a helpful AI assistant with access to both 
-    calendar (tasks) and notes data. Evaluate  the user’s request and decide whether to 
-    use calendar data only, notes data only, both, or neither. Respond using only the selected 
-    data sections. If the user’s request does not clearly ask for data, ask a clarifying 
-    follow-up. Prioritize accuracy and brevity; do not fabricate or assume any data.`,
+    systemPromptBefore: `You are a helpful AI assistant with access to calendar tasks and notes data.
++
++CRITICAL FORMATTING INSTRUCTIONS - YOU MUST FOLLOW THESE EXACTLY:
++- NEVER use asterisks (*) in your responses for ANY reason
++- NEVER use markdown formatting of any kind
++- NEVER use emojis or special characters for decoration
++- Use ONLY plain text with simple line breaks
++- For lists, use only simple dashes (-) or numbers (1., 2.)
++- For emphasis, use capitalization instead of formatting
++- Keep your tone professional and straightforward
++
++When responding to user queries:
++1. Determine if you need calendar data, notes data, both, or neither
++2. Provide only relevant information from the selected data
++3. If the user's request is unclear, ask a specific follow-up question
++4. Be concise and accurate; never fabricate information
++
++Remember: NO ASTERISKS, NO MARKDOWN, NO EMOJIS - only plain text.`,
     systemPromptAfter: 'Make sure everything is accurate.',
     apiSettingsExpanded: false, // Whether API settings panel is expanded
 };
@@ -580,34 +594,29 @@ SecondBrain.updateApiSettings = () => {
         apiProviderSelect, 
         apiEndpointInput,
         systemPromptBeforeInput,
-        systemPromptAfterInput 
+        systemPromptAfterInput,
+        chatSettings
     } = SecondBrain.dom;
     
     SecondBrain.state.apiKey = apiKeyInput.value.trim();
     SecondBrain.state.apiProvider = apiProviderSelect.value;
-    SecondBrain.state.apiEndpoint = apiEndpointInput.value.trim();
-    
-    // Update system prompts from inputs
-    if (systemPromptBeforeInput && systemPromptBeforeInput.value.trim()) {
-        SecondBrain.state.systemPromptBefore = systemPromptBeforeInput.value.trim();
-    }
-    
-    if (systemPromptAfterInput && systemPromptAfterInput.value.trim()) {
-        SecondBrain.state.systemPromptAfter = systemPromptAfterInput.value.trim();
-    }
+    SecondBrain.state.apiEndpoint = apiEndpointInput.value.trim() || 
+        SecondBrain.config.API_PROVIDERS[apiProviderSelect.value].defaultEndpoint;
+    SecondBrain.state.systemPromptBefore = systemPromptBeforeInput.value.trim();
+    SecondBrain.state.systemPromptAfter = systemPromptAfterInput.value.trim();
     
     SecondBrain.saveApiSettings();
     
     // Show confirmation message
-    const messageEl = document.createElement('div');
-    messageEl.className = 'settings-saved-message';
-    messageEl.textContent = 'Settings saved!';
-    apiKeyInput.parentNode.appendChild(messageEl);
-    
-    // Remove message after 3 seconds
-    setTimeout(() => {
-        messageEl.remove();
-    }, 3000);
+    const settingsSavedMessage = SecondBrain.dom.settingsSavedMessage;
+    if (settingsSavedMessage) {
+        settingsSavedMessage.style.display = 'inline-block';
+        
+        // Hide after 3 seconds
+        setTimeout(() => {
+            settingsSavedMessage.style.display = 'none';
+        }, 3000);
+    }
 };
 
 /**
@@ -731,6 +740,10 @@ SecondBrain.createChatButton = () => {
                     <div class="rune rune-3">ᚦ</div>
                     <div class="rune rune-4">ᚨ</div>
                     <div class="rune rune-5">ᚱ</div>
+                    <div class="rune rune-6">ᛗ</div>
+                    <div class="rune rune-7">ᛃ</div>
+                    <div class="rune rune-8">ᛉ</div>
+                    <div class="rune rune-9">ᛋ</div>
                 </div>
                 <div class="ai-pulse"></div>
             </div>
@@ -747,33 +760,38 @@ SecondBrain.createChatButton = () => {
             const setupRuneObserver = (rune, index) => {
                 rune.addEventListener('animationiteration', (event) => {
                     if (event.animationName === `rune-cycle-${index+1}`) {
-                        // When animation reaches the visible state
-                        const visibleTime = index * 20 + 4; // 4%, 24%, 44%, etc.
-                        const hiddenTime = index * 20 + 16; // 16%, 36%, 56%, etc.
+                        // Calculate timing based on new 18-second cycle with 9 equal slots
+                        // Each rune gets exactly 1/9 of the cycle (11.1%)
+                        let visibleTime, hiddenTime;
+                        visibleTime = (index * 11.1) + 1; // 1%, 12.1%, 23.2%, etc.
+                        hiddenTime = (index * 11.1) + 10; // 10%, 21.1%, 32.2%, etc.
                         
                         // Add active class during visible period
                         setTimeout(() => {
                             rune.classList.add('active');
-                        }, (visibleTime / 100) * 10000); // Convert % to ms of 10s cycle
+                        }, (visibleTime / 100) * 18000); // Convert % to ms of 18s cycle
                         
                         // Remove active class when hidden
                         setTimeout(() => {
                             rune.classList.remove('active');
-                        }, (hiddenTime / 100) * 10000); // Convert % to ms of 10s cycle
+                        }, (hiddenTime / 100) * 18000); // Convert % to ms of 18s cycle
                     }
                 });
                 
                 // Initial trigger for first cycle
-                const visibleTime = index * 20 + 4; // 4%, 24%, 44%, etc.
-                const hiddenTime = index * 20 + 16; // 16%, 36%, 56%, etc.
+                let visibleTime, hiddenTime;
+                visibleTime = (index * 11.1) + 1; // 1%, 12.1%, 23.2%, etc.
+                hiddenTime = (index * 11.1) + 10; // 10%, 21.1%, 32.2%, etc.
                 
+                // Add active class during visible period
                 setTimeout(() => {
                     rune.classList.add('active');
-                }, (visibleTime / 100) * 10000); // Convert % to ms of 10s cycle
+                }, (visibleTime / 100) * 18000); // Convert % to ms of 18s cycle
                 
+                // Remove active class when hidden
                 setTimeout(() => {
                     rune.classList.remove('active');
-                }, (hiddenTime / 100) * 10000); // Convert % to ms of 10s cycle
+                }, (hiddenTime / 100) * 18000); // Convert % to ms of 18s cycle
             };
             
             // Setup for each rune
@@ -782,7 +800,6 @@ SecondBrain.createChatButton = () => {
             });
         }
     });
-    chatButton.title = 'Second Brain';
     
     // Add to body for fixed positioning
     document.body.appendChild(chatButton);
@@ -803,7 +820,11 @@ SecondBrain.createChatModal = () => {
             <div class="chat-header">
                 <h3>Second Brain</h3>
                 <button id="clearChatButton" class="clear-chat-button">Clear Chat</button>
-                <button class="close-button">&times;</button>
+                <button class="close-button">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"></path>
+                    </svg>
+                </button>
             </div>
             <div class="chat-container">
                 <div class="chat-messages" id="chatMessages">
@@ -813,22 +834,25 @@ SecondBrain.createChatModal = () => {
                         </div>
                     </div>
                 </div>
-                <div class="chat-input-container">
-                    <textarea id="chatInput" placeholder="Ask me anything about your tasks and notes..." rows="2"></textarea>
-                    <button id="chatSendButton" class="chat-send-button">
-                        <i data-feather="send"></i>
-                    </button>
+                <div class="chat-input-area">
+                    <div class="chat-input-container">
+                        <textarea id="chatInput" placeholder="Ask me anything about your tasks and notes..." rows="1"></textarea>
+                        <button id="chatSendButton" class="chat-send-button">
+                            <i data-feather="send"></i>
+                        </button>
+                    </div>
+                    <div class="settings-toggle">
+                        <button id="toggleSettingsBtn" class="toggle-settings-button">
+                            <i data-feather="settings" class="settings-icon"></i>
+                            <span>API Settings</span>
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="chat-settings-header">
-                <button id="toggleSettingsBtn" class="toggle-settings-button">
-                    <span>API Settings</span>
-                    <i data-feather="chevron-down" class="settings-icon"></i>
-                </button>
-            </div>
-            <div class="chat-settings" id="chatSettings" style="display: none;">
+            <div class="chat-settings" id="chatSettings">
+                <h4>API Configuration</h4>
                 <div class="settings-group">
-                    <label for="apiProviderSelect">API Provider:</label>
+                    <label for="apiProviderSelect">API Provider</label>
                     <select id="apiProviderSelect">
                         <option value="openai">OpenAI</option>
                         <option value="anthropic">Anthropic</option>
@@ -836,21 +860,22 @@ SecondBrain.createChatModal = () => {
                     </select>
                 </div>
                 <div class="settings-group">
-                    <label for="apiKeyInput">API Key:</label>
+                    <label for="apiKeyInput">API Key</label>
                     <input type="password" id="apiKeyInput" placeholder="Enter your API key">
                 </div>
                 <div class="settings-group">
-                    <label for="apiEndpointInput">API Endpoint:</label>
+                    <label for="apiEndpointInput">API Endpoint</label>
                     <input type="text" id="apiEndpointInput" placeholder="API endpoint URL">
                 </div>
                 <div class="settings-group">
-                    <label for="systemPromptBeforeInput">System Prompt Before:</label>
-                    <textarea id="systemPromptBeforeInput" placeholder="Enter the system prompt before the context" rows="2"></textarea>
+                    <label for="systemPromptBeforeInput">System Prompt (Before Context)</label>
+                    <textarea id="systemPromptBeforeInput" placeholder="Enter system prompt that appears before the context" rows="2"></textarea>
                 </div>
                 <div class="settings-group">
-                    <label for="systemPromptAfterInput">System Prompt After:</label>
-                    <textarea id="systemPromptAfterInput" placeholder="Enter the system prompt after the response" rows="2"></textarea>
+                    <label for="systemPromptAfterInput">System Prompt (After Context)</label>
+                    <textarea id="systemPromptAfterInput" placeholder="Enter system prompt that appears after the context" rows="2"></textarea>
                 </div>
+                <div id="settingsSavedMessage" class="settings-saved-message" style="display: none;">Settings saved successfully!</div>
                 <button id="saveApiSettingsButton" class="save-settings-button">Save Settings</button>
             </div>
         </div>
@@ -872,6 +897,7 @@ SecondBrain.createChatModal = () => {
     SecondBrain.dom.chatSettings = document.getElementById('chatSettings');
     SecondBrain.dom.toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
     SecondBrain.dom.clearChatButton = document.getElementById('clearChatButton'); // New property
+    SecondBrain.dom.settingsSavedMessage = document.getElementById('settingsSavedMessage'); // New property
     
     // Initialize feather icons
     App.refreshIcons();
@@ -895,9 +921,24 @@ SecondBrain.showChatModal = () => {
     systemPromptBeforeInput.value = SecondBrain.state.systemPromptBefore || '';
     systemPromptAfterInput.value = SecondBrain.state.systemPromptAfter || '';
     
-    // Set settings panel display based on state
+    // Set settings panel expanded state based on saved state
     if (chatSettings) {
-        chatSettings.style.display = SecondBrain.state.apiSettingsExpanded ? 'block' : 'none';
+        // Use classList to add/remove the expanded class based on state
+        if (SecondBrain.state.apiSettingsExpanded) {
+            chatSettings.classList.add('expanded');
+        } else {
+            chatSettings.classList.remove('expanded');
+        }
+        
+        // Ensure the settings icon is consistent
+        const toggleSettingsBtn = SecondBrain.dom.toggleSettingsBtn;
+        if (toggleSettingsBtn) {
+            const settingsIcon = toggleSettingsBtn.querySelector('.settings-icon');
+            if (settingsIcon) {
+                settingsIcon.setAttribute('data-feather', 'settings');
+                App.refreshIcons();
+            }
+        }
     }
     
     // Show the modal
@@ -932,7 +973,27 @@ SecondBrain.addMessageToChat = (content, role) => {
     
     const contentEl = document.createElement('div');
     contentEl.className = 'message-content';
-    contentEl.innerHTML = content.replace(/\n/g, '<br>');
+    
+    // Process content to completely strip all markdown formatting
+    // This function will remove or escape all markdown syntax
+    const stripMarkdown = (text) => {
+        return text
+            // Remove or replace all markdown formatting
+            .replace(/\*/g, '') // Remove asterisks completely
+            .replace(/_/g, '') // Remove underscores
+            .replace(/\*\*/g, '') // Remove double asterisks
+            .replace(/\#/g, '') // Remove hashtags
+            .replace(/\`\`\`[\s\S]*?\`\`\`/g, (match) => match.replace(/\`\`\`/g, '')) // Remove code block markers
+            .replace(/\`/g, '') // Remove inline code markers
+            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)') // Convert markdown links to plain text
+            .replace(/\!\[([^\]]+)\]\(([^)]+)\)/g, 'Image: $1 ($2)') // Convert markdown images to plain text
+            .replace(/\n/g, '<br>'); // Replace newlines with <br> tags
+    };
+    
+    // Apply the markdown stripping function
+    const processedContent = stripMarkdown(content);
+    
+    contentEl.innerHTML = processedContent;
     
     messageEl.appendChild(contentEl);
     chatMessages.appendChild(messageEl);
@@ -945,7 +1006,7 @@ SecondBrain.addMessageToChat = (content, role) => {
 };
 
 /**
- * Shows a loading indicator in the chat
+ * Shows an enhanced loading indicator in the chat
  */
 SecondBrain.showLoadingIndicator = () => {
     const { chatMessages } = SecondBrain.dom;
@@ -953,7 +1014,17 @@ SecondBrain.showLoadingIndicator = () => {
     
     const loadingEl = document.createElement('div');
     loadingEl.className = 'chat-message assistant-message loading';
-    loadingEl.innerHTML = '<div class="message-content"><div class="typing-indicator"><span></span><span></span><span></span></div></div>';
+    loadingEl.innerHTML = `
+        <div class="message-content">
+            <div class="typing-indicator">
+                <div class="dots-container">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    `;
     loadingEl.id = 'loadingIndicator';
     
     chatMessages.appendChild(loadingEl);
@@ -1027,7 +1098,7 @@ SecondBrain.handleProviderChange = () => {
 };
 
 /**
- * Toggles the API settings panel
+ * Toggles the API settings panel with animation
  */
 SecondBrain.toggleApiSettings = () => {
     const { chatSettings, toggleSettingsBtn } = SecondBrain.dom;
@@ -1035,20 +1106,13 @@ SecondBrain.toggleApiSettings = () => {
     
     const settingsIcon = toggleSettingsBtn.querySelector('.settings-icon');
     
-    if (chatSettings.style.display === 'none') {
-        chatSettings.style.display = 'block';
-        SecondBrain.state.apiSettingsExpanded = true;
-        // Replace the icon with the up chevron
-        if (settingsIcon) {
-            settingsIcon.setAttribute('data-feather', 'chevron-up');
-        }
-    } else {
-        chatSettings.style.display = 'none';
-        SecondBrain.state.apiSettingsExpanded = false;
-        // Replace the icon with the down chevron
-        if (settingsIcon) {
-            settingsIcon.setAttribute('data-feather', 'chevron-down');
-        }
+    // Using classList.toggle to add/remove the expanded class
+    const isExpanded = chatSettings.classList.toggle('expanded');
+    SecondBrain.state.apiSettingsExpanded = isExpanded;
+    
+    // Always keep the settings icon
+    if (settingsIcon) {
+        settingsIcon.setAttribute('data-feather', 'settings');
     }
     
     // Re-render the Feather icons
