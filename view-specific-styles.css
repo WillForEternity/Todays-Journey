@@ -87,10 +87,11 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
     min-height: 0;
 }
 
-/* Spacer element to provide bottom breathing room */
-.task-list-spacer {
-    height: 30px; /* Match the container's top padding for visual balance */
-    flex-shrink: 0; /* Don't compress this spacer */
+/* Bottom spacer to provide padding below last task when scrolling */
+.task-list-bottom-spacer {
+    height: 55px; /* Match container top padding (30px) + input area margin-bottom (25px) */
+    flex-shrink: 0;
+    pointer-events: none;
 }
 
 #taskList li,
@@ -559,7 +560,7 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
 }
 #importantList { /* Specific list in calendar sidebar */
     list-style: none;
-    padding: 0 0 20px 0; /* Match the 20px top padding of important-tasks-container */
+    padding: 0;
     margin: 0;
     overflow-y: auto;
     flex-grow: 1;

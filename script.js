@@ -412,6 +412,11 @@ CalendarApp.renderTaskList = () => {
             const li = CalendarApp.createTaskListItem(task, dateString);
             taskList.appendChild(li);
         });
+        
+        // Add bottom spacing element to match top container spacing
+        const bottomSpacer = document.createElement('div');
+        bottomSpacer.className = 'task-list-bottom-spacer';
+        taskList.appendChild(bottomSpacer);
     }
 
      // Reset input area
