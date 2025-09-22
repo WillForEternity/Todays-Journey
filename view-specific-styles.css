@@ -81,10 +81,16 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
 /* --- [Calendar] Task List Styles --- */
 #taskList {
     list-style: none;
-    padding: 0 0 60px 0; /* Extra bottom padding since daily-tasks-panel is scrollable */
+    padding: 0;
     margin: 0;
     flex-grow: 1;
     min-height: 0;
+}
+
+/* Spacer element to provide bottom breathing room */
+.task-list-spacer {
+    height: 30px; /* Match the container's top padding for visual balance */
+    flex-shrink: 0; /* Don't compress this spacer */
 }
 
 #taskList li,
