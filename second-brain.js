@@ -27,28 +27,26 @@ SecondBrain.dom = {
 SecondBrain.state = {
     isInitialized: false,
     apiKey: '',
-    apiProvider: 'openai', // Default provider
-    apiEndpoint: 'https://api.openai.com/v1/chat/completions', // Default endpoint
+    apiProvider: 'gemini', // Default provider changed to gemini
+    apiEndpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-exp-03-25:generateContent', // Updated to specific experimental model
     messages: [], // Chat history
     isProcessing: false,
     systemPromptBefore: `You are a helpful AI assistant with access to calendar tasks and notes data.
-+
-+CRITICAL FORMATTING INSTRUCTIONS - YOU MUST FOLLOW THESE EXACTLY:
-+- NEVER use asterisks (*) in your responses for ANY reason
-+- NEVER use markdown formatting of any kind
-+- NEVER use emojis or special characters for decoration
-+- Use ONLY plain text with simple line breaks
-+- For lists, use only simple dashes (-) or numbers (1., 2.)
-+- For emphasis, use capitalization instead of formatting
-+- Keep your tone professional and straightforward
-+
-+When responding to user queries:
-+1. Determine if you need calendar data, notes data, both, or neither
-+2. Provide only relevant information from the selected data
-+3. If the user's request is unclear, ask a specific follow-up question
-+4. Be concise and accurate; never fabricate information
-+
-+Remember: NO ASTERISKS, NO MARKDOWN, NO EMOJIS - only plain text.`,
+
+FORMATTING INSTRUCTIONS:
+- Feel free to use emojis to make your responses more engaging
+- NEVER use asterisks (*) in your responses
+- NEVER use markdown formatting of any kind
+- Use simple line breaks for formatting
+- For lists, use only simple dashes (-) or numbers (1., 2.)
+- For emphasis, use capitalization instead of formatting
+- Keep your tone friendly and conversational
+
+When responding to user queries:
+1. Determine if you need calendar data, notes data, both, or neither
+2. Provide only relevant information from the selected data
+3. If the user's request is unclear, ask a specific follow-up question
+4. Be concise and accurate; never fabricate information`,
     systemPromptAfter: 'Make sure everything is accurate.',
     apiSettingsExpanded: false, // Whether API settings panel is expanded
 };
@@ -56,6 +54,11 @@ SecondBrain.state = {
 // --- Second Brain Configuration ---
 SecondBrain.config = {
     API_PROVIDERS: {
+        gemini: {
+            name: 'Google Gemini 2.5 Pro (Experimental)',
+            defaultEndpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-exp-03-25:generateContent',
+            defaultModel: 'gemini-2.5-pro-exp-03-25',
+        },
         openai: {
             name: 'OpenAI',
             defaultEndpoint: 'https://api.openai.com/v1/chat/completions',
@@ -537,24 +540,23 @@ SecondBrain.formatDataForContext = async (includeCalendar = true, includeNotes =
  */
 SecondBrain.loadApiSettings = () => {
     try {
+        // Load all settings from a single storage location
         const settings = localStorage.getItem(SecondBrain.config.SETTINGS_KEY);
         if (settings) {
             const parsedSettings = JSON.parse(settings);
+            
+            // Load API settings
             SecondBrain.state.apiKey = parsedSettings.apiKey || '';
-            SecondBrain.state.apiProvider = parsedSettings.apiProvider || 'openai';
+            SecondBrain.state.apiProvider = parsedSettings.apiProvider || 'gemini';
             SecondBrain.state.apiEndpoint = parsedSettings.apiEndpoint || 
-                SecondBrain.config.API_PROVIDERS[parsedSettings.apiProvider || 'openai'].defaultEndpoint;
-        }
-        
-        // Load system prompts separately
-        const systemPrompts = localStorage.getItem(SecondBrain.config.SYSTEM_PROMPTS_KEY);
-        if (systemPrompts) {
-            const parsedPrompts = JSON.parse(systemPrompts);
-            if (parsedPrompts.before) {
-                SecondBrain.state.systemPromptBefore = parsedPrompts.before;
+                SecondBrain.config.API_PROVIDERS[parsedSettings.apiProvider || 'gemini'].defaultEndpoint;
+            
+            // Load system prompts if they exist
+            if (parsedSettings.systemPromptBefore) {
+                SecondBrain.state.systemPromptBefore = parsedSettings.systemPromptBefore;
             }
-            if (parsedPrompts.after) {
-                SecondBrain.state.systemPromptAfter = parsedPrompts.after;
+            if (parsedSettings.systemPromptAfter) {
+                SecondBrain.state.systemPromptAfter = parsedSettings.systemPromptAfter;
             }
         }
     } catch (error) {
@@ -567,19 +569,16 @@ SecondBrain.loadApiSettings = () => {
  */
 SecondBrain.saveApiSettings = () => {
     try {
+        // Save all settings to a single storage location
         const settings = {
             apiKey: SecondBrain.state.apiKey,
             apiProvider: SecondBrain.state.apiProvider,
             apiEndpoint: SecondBrain.state.apiEndpoint,
+            systemPromptBefore: SecondBrain.state.systemPromptBefore,
+            systemPromptAfter: SecondBrain.state.systemPromptAfter
         };
-        localStorage.setItem(SecondBrain.config.SETTINGS_KEY, JSON.stringify(settings));
         
-        // Save system prompts separately
-        const systemPrompts = {
-            before: SecondBrain.state.systemPromptBefore,
-            after: SecondBrain.state.systemPromptAfter
-        };
-        localStorage.setItem(SecondBrain.config.SYSTEM_PROMPTS_KEY, JSON.stringify(systemPrompts));
+        localStorage.setItem(SecondBrain.config.SETTINGS_KEY, JSON.stringify(settings));
     } catch (error) {
         console.error('Error saving API settings:', error);
     }
@@ -643,7 +642,24 @@ SecondBrain.sendToLLM = async (userMessage, context) => {
     // Create a combined message that includes the instruction to follow the system prompt after
     const combinedSystemPrompt = `${systemPromptBefore}\n\nAfter providing your response, follow this instruction but DO NOT include it in your response: ${systemPromptAfter}`;
     
-    if (apiProvider === 'openai') {
+    if (apiProvider === 'gemini') {
+        headers['x-goog-api-key'] = apiKey;
+        requestBody = {
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        { text: `${combinedSystemPrompt}\n\n${context}\n\n${userMessage}` }
+                    ]
+                }
+            ],
+            generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 4000, // Increased from 1000 to 4000
+                stopSequences: ["STOP_SEQUENCE_THAT_WILL_NEVER_APPEAR"] // Ensures we get complete responses
+            }
+        };
+    } else if (apiProvider === 'openai') {
         headers['Authorization'] = `Bearer ${apiKey}`;
         requestBody = {
             model: SecondBrain.config.API_PROVIDERS.openai.defaultModel,
@@ -680,40 +696,111 @@ SecondBrain.sendToLLM = async (userMessage, context) => {
         };
     }
     
-    try {
-        const response = await fetch(apiEndpoint, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify(requestBody)
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(`API request failed: ${response.status} ${response.statusText} ${JSON.stringify(errorData)}`);
+    // Add retry logic for API calls
+    const maxRetries = 3;
+    let retryCount = 0;
+    let lastError = null;
+    
+    while (retryCount < maxRetries) {
+        try {
+            console.log(`API attempt ${retryCount + 1}/${maxRetries} to ${apiEndpoint}`);
+            
+            const response = await fetch(apiEndpoint, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(requestBody)
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error(`API error (attempt ${retryCount + 1}/${maxRetries}):`, response.status, response.statusText, errorData);
+                throw new Error(`API request failed: ${response.status} ${response.statusText} ${JSON.stringify(errorData)}`);
+            }
+            
+            const data = await response.json();
+            console.log('API response received:', data);
+            
+            // Extract the response text based on the provider
+            let responseText = '';
+            
+            if (apiProvider === 'gemini') {
+                if (!data.candidates || !data.candidates.length) {
+                    console.error('No candidates in Gemini response:', data);
+                    throw new Error('No candidates in Gemini response');
+                }
+                
+                const candidate = data.candidates[0];
+                if (!candidate.content || !candidate.content.parts || !candidate.content.parts.length) {
+                    console.error('Invalid candidate structure in Gemini response:', candidate);
+                    throw new Error('Invalid candidate structure in Gemini response');
+                }
+                
+                responseText = candidate.content.parts[0].text;
+                
+                // Check if the response appears to be cut off
+                if (!responseText) {
+                    console.error('Empty text in Gemini response part:', candidate.content.parts[0]);
+                    throw new Error('Empty text in Gemini response part');
+                }
+                
+                // Check for common signs of truncation
+                const truncationIndicators = [
+                    /\.\.\.$/, // Ends with ellipsis
+                    /[,;:]$/, // Ends with comma, semicolon, or colon
+                    /^.*[a-zA-Z]$/ // Ends with a letter (no punctuation)
+                ];
+                
+                const mightBeTruncated = truncationIndicators.some(pattern => pattern.test(responseText.trim()));
+                
+                if (mightBeTruncated && !responseText.includes('To be continued') && candidate.finishReason === 'MAX_TOKENS') {
+                    console.warn('Response appears to be truncated. Adding a note to the user.');
+                    responseText += '\n\n[Note: The AI\'s response was cut off due to length limits. You may want to ask for the rest or rephrase your question to get a more concise answer.]';
+                }
+            } else if (apiProvider === 'openai') {
+                if (!data.choices || !data.choices.length || !data.choices[0].message) {
+                    console.error('Invalid OpenAI response structure:', data);
+                    throw new Error('Invalid OpenAI response structure');
+                }
+                responseText = data.choices[0].message.content;
+            } else if (apiProvider === 'anthropic') {
+                if (!data.content || !data.content.length) {
+                    console.error('Invalid Anthropic response structure:', data);
+                    throw new Error('Invalid Anthropic response structure');
+                }
+                responseText = data.content[0].text;
+            } else {
+                // Try to extract from a generic response structure
+                responseText = 
+                    (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0].text) ||
+                    (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) ||
+                    (data.content && data.content[0] && data.content[0].text) ||
+                    (data.response) ||
+                    JSON.stringify(data);
+            }
+            
+            if (!responseText) {
+                console.error('Empty response text after extraction:', data);
+                throw new Error('Empty response text after extraction');
+            }
+            
+            console.log('Successfully extracted response text');
+            return responseText;
+        } catch (error) {
+            lastError = error;
+            console.error(`API call attempt ${retryCount + 1}/${maxRetries} failed:`, error);
+            retryCount++;
+            
+            if (retryCount < maxRetries) {
+                // Add exponential backoff with jitter
+                const delay = Math.min(1000 * Math.pow(2, retryCount) + Math.random() * 1000, 10000);
+                console.log(`Retrying in ${Math.round(delay/1000)} seconds...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
         }
-        
-        const data = await response.json();
-        
-        // Extract the response text based on the provider
-        let responseText = '';
-        if (apiProvider === 'openai') {
-            responseText = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        } else if (apiProvider === 'anthropic') {
-            responseText = data.content && data.content[0] && data.content[0].text;
-        } else {
-            // Try to extract from a generic response structure
-            responseText = 
-                (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) ||
-                (data.content && data.content[0] && data.content[0].text) ||
-                (data.response) ||
-                JSON.stringify(data);
-        }
-        
-        return responseText || 'No response from API';
-    } catch (error) {
-        console.error('Error sending message to LLM:', error);
-        throw error;
     }
+    
+    console.error('All API call attempts failed:', lastError);
+    return 'Sorry, I was unable to get a response from the AI service after multiple attempts. Please try again later.';
 };
 
 // --- UI Functions ---
@@ -721,90 +808,13 @@ SecondBrain.sendToLLM = async (userMessage, context) => {
 /**
  * Creates and adds the chat button to the app header
  */
-SecondBrain.createChatButton = () => {
-    const chatButton = document.createElement('button');
-    chatButton.id = 'brainBtn';
-    chatButton.className = 'brain-button';
-    chatButton.innerHTML = `
-        <div class="ai-button-wrapper">
-            <div class="ai-button-rings">
-                <div class="ring ring-1"></div>
-                <div class="ring ring-2"></div>
-                <div class="ring ring-3"></div>
-            </div>
-            <div class="ai-button-core">
-                <div class="ai-glow"></div>
-                <div class="rune-container">
-                    <div class="rune rune-1">ᚠ</div>
-                    <div class="rune rune-2">ᚢ</div>
-                    <div class="rune rune-3">ᚦ</div>
-                    <div class="rune rune-4">ᚨ</div>
-                    <div class="rune rune-5">ᚱ</div>
-                    <div class="rune rune-6">ᛗ</div>
-                    <div class="rune rune-7">ᛃ</div>
-                    <div class="rune rune-8">ᛉ</div>
-                    <div class="rune rune-9">ᛋ</div>
-                </div>
-                <div class="ai-pulse"></div>
-            </div>
-        </div>
-        <span class="ai-label">Second Brain</span>
-    `;
-
-    // Add animation synchronization
-    chatButton.addEventListener('animationstart', (e) => {
-        if (e.animationName === 'rune-cycle-1' && e.target.classList.contains('rune-1')) {
-            const runes = chatButton.querySelectorAll('.rune');
-            
-            // Setup animation observers for each rune
-            const setupRuneObserver = (rune, index) => {
-                rune.addEventListener('animationiteration', (event) => {
-                    if (event.animationName === `rune-cycle-${index+1}`) {
-                        // Calculate timing based on new 18-second cycle with 9 equal slots
-                        // Each rune gets exactly 1/9 of the cycle (11.1%)
-                        let visibleTime, hiddenTime;
-                        visibleTime = (index * 11.1) + 1; // 1%, 12.1%, 23.2%, etc.
-                        hiddenTime = (index * 11.1) + 10; // 10%, 21.1%, 32.2%, etc.
-                        
-                        // Add active class during visible period
-                        setTimeout(() => {
-                            rune.classList.add('active');
-                        }, (visibleTime / 100) * 18000); // Convert % to ms of 18s cycle
-                        
-                        // Remove active class when hidden
-                        setTimeout(() => {
-                            rune.classList.remove('active');
-                        }, (hiddenTime / 100) * 18000); // Convert % to ms of 18s cycle
-                    }
-                });
-                
-                // Initial trigger for first cycle
-                let visibleTime, hiddenTime;
-                visibleTime = (index * 11.1) + 1; // 1%, 12.1%, 23.2%, etc.
-                hiddenTime = (index * 11.1) + 10; // 10%, 21.1%, 32.2%, etc.
-                
-                // Add active class during visible period
-                setTimeout(() => {
-                    rune.classList.add('active');
-                }, (visibleTime / 100) * 18000); // Convert % to ms of 18s cycle
-                
-                // Remove active class when hidden
-                setTimeout(() => {
-                    rune.classList.remove('active');
-                }, (hiddenTime / 100) * 18000); // Convert % to ms of 18s cycle
-            };
-            
-            // Setup for each rune
-            runes.forEach((rune, index) => {
-                setupRuneObserver(rune, index);
-            });
-        }
-    });
-    
-    // Add to body for fixed positioning
-    document.body.appendChild(chatButton);
-    
-    SecondBrain.dom.chatButton = chatButton;
+SecondBrain.attachChatButton = () => {
+    const chatButton = document.getElementById('brainBtn');
+    if (chatButton) {
+        chatButton.addEventListener('click', SecondBrain.showChatModal);
+        // Store reference
+        SecondBrain.dom.chatButton = chatButton;
+    }
 };
 
 /**
@@ -854,6 +864,7 @@ SecondBrain.createChatModal = () => {
                 <div class="settings-group">
                     <label for="apiProviderSelect">API Provider</label>
                     <select id="apiProviderSelect">
+                        <option value="gemini">Google Gemini 2.5 Pro (Experimental)</option>
                         <option value="openai">OpenAI</option>
                         <option value="anthropic">Anthropic</option>
                         <option value="custom">Custom Provider</option>
@@ -865,7 +876,7 @@ SecondBrain.createChatModal = () => {
                 </div>
                 <div class="settings-group">
                     <label for="apiEndpointInput">API Endpoint</label>
-                    <input type="text" id="apiEndpointInput" placeholder="API endpoint URL">
+                    <input type="text" id="apiEndpointInput" placeholder="API endpoint URL" value="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-exp-03-25:generateContent">
                 </div>
                 <div class="settings-group">
                     <label for="systemPromptBeforeInput">System Prompt (Before Context)</label>
@@ -913,10 +924,11 @@ SecondBrain.showChatModal = () => {
     
     // Load current API settings into form
     apiKeyInput.value = SecondBrain.state.apiKey || '';
-    apiProviderSelect.value = SecondBrain.state.apiProvider || 'openai';
-    apiEndpointInput.value = SecondBrain.state.apiEndpoint || 
-        SecondBrain.config.API_PROVIDERS[SecondBrain.state.apiProvider || 'openai'].defaultEndpoint;
-        
+    apiProviderSelect.value = SecondBrain.state.apiProvider || 'gemini';
+    
+    // Always use the latest endpoint from the config
+    apiEndpointInput.value = SecondBrain.config.API_PROVIDERS[SecondBrain.state.apiProvider || 'gemini'].defaultEndpoint;
+    
     // Always load the current system prompts from state (which includes user customizations)
     systemPromptBeforeInput.value = SecondBrain.state.systemPromptBefore || '';
     systemPromptAfterInput.value = SecondBrain.state.systemPromptAfter || '';
@@ -974,24 +986,8 @@ SecondBrain.addMessageToChat = (content, role) => {
     const contentEl = document.createElement('div');
     contentEl.className = 'message-content';
     
-    // Process content to completely strip all markdown formatting
-    // This function will remove or escape all markdown syntax
-    const stripMarkdown = (text) => {
-        return text
-            // Remove or replace all markdown formatting
-            .replace(/\*/g, '') // Remove asterisks completely
-            .replace(/_/g, '') // Remove underscores
-            .replace(/\*\*/g, '') // Remove double asterisks
-            .replace(/\#/g, '') // Remove hashtags
-            .replace(/\`\`\`[\s\S]*?\`\`\`/g, (match) => match.replace(/\`\`\`/g, '')) // Remove code block markers
-            .replace(/\`/g, '') // Remove inline code markers
-            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)') // Convert markdown links to plain text
-            .replace(/\!\[([^\]]+)\]\(([^)]+)\)/g, 'Image: $1 ($2)') // Convert markdown images to plain text
-            .replace(/\n/g, '<br>'); // Replace newlines with <br> tags
-    };
-    
-    // Apply the markdown stripping function
-    const processedContent = stripMarkdown(content);
+    // Process content to completely strip all markdown formatting and emojis
+    const processedContent = SecondBrain.addMessageToChat.stripMarkdown(content);
     
     contentEl.innerHTML = processedContent;
     
@@ -1003,6 +999,30 @@ SecondBrain.addMessageToChat = (content, role) => {
     
     // Add to messages state
     SecondBrain.state.messages.push({ role, content });
+};
+
+/**
+ * Process content to handle markdown formatting and hex symbols
+ * This function will remove markdown syntax but allow emojis
+ * @param {string} text - The text to process
+ * @returns {string} - The processed text
+ */
+SecondBrain.addMessageToChat.stripMarkdown = (text) => {
+    if (!text) return '';
+    
+    return text
+        // Remove or replace all markdown formatting
+        .replace(/\*/g, '') // Remove asterisks completely
+        .replace(/_/g, '') // Remove underscores
+        .replace(/\*\*/g, '') // Remove double asterisks
+        .replace(/\#/g, '') // Remove hashtags
+        .replace(/\`\`\`[\s\S]*?\`\`\`/g, (match) => match.replace(/\`\`\`/g, '')) // Remove code block markers
+        .replace(/\`/g, '') // Remove inline code markers
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)') // Convert markdown links to plain text
+        .replace(/\!\[([^\]]+)\]\(([^)]+)\)/g, 'Image: $1 ($2)') // Convert markdown images to plain text
+        // Only remove hex representations, not actual emojis
+        .replace(/<0x[A-Fa-f0-9]+>/g, '') // Remove hex representations like <0xF0><0x9F>
+        .replace(/\n/g, '<br>'); // Replace newlines with <br> tags
 };
 
 /**
@@ -1046,43 +1066,81 @@ SecondBrain.removeLoadingIndicator = () => {
  */
 SecondBrain.handleSendMessage = async () => {
     const { chatInput } = SecondBrain.dom;
-    if (!chatInput) return;
+    const userMessage = chatInput.value.trim();
     
-    const message = chatInput.value.trim();
-    if (!message || SecondBrain.state.isProcessing) return;
+    if (!userMessage || SecondBrain.state.isProcessing) return;
+    
+    SecondBrain.state.isProcessing = true;
+    
+    // Add user message to chat
+    SecondBrain.addMessageToChat(userMessage, 'user');
     
     // Clear input
     chatInput.value = '';
     
-    // Add user message to chat
-    SecondBrain.addMessageToChat(message, 'user');
-    
     // Show loading indicator
     SecondBrain.showLoadingIndicator();
-    SecondBrain.state.isProcessing = true;
     
-    try {
-        const context = await SecondBrain.formatDataForContext(true, true);
-        
-        // Send to LLM
-        const response = await SecondBrain.sendToLLM(message, context);
-        
-        // Remove loading indicator
-        SecondBrain.removeLoadingIndicator();
-        
-        // Add assistant response to chat
-        SecondBrain.addMessageToChat(response, 'assistant');
-    } catch (error) {
-        console.error('Error sending message:', error);
-        
-        // Remove loading indicator
-        SecondBrain.removeLoadingIndicator();
-        
-        // Add error message to chat
-        SecondBrain.addMessageToChat(`Error: ${error.message}`, 'system-message error');
-    } finally {
-        SecondBrain.state.isProcessing = false;
-    }
+    // Determine what data to include in context
+    const includeCalendar = true; // Always include calendar for now
+    const includeNotes = true;    // Always include notes for now
+    
+    // Format data for context
+    SecondBrain.formatDataForContext(includeCalendar, includeNotes)
+        .then(context => {
+            // Send to LLM
+            return SecondBrain.sendToLLM(userMessage, context);
+        })
+        .then(response => {
+            // Remove loading indicator
+            SecondBrain.removeLoadingIndicator();
+            
+            // Add assistant message to chat
+            SecondBrain.addMessageToChat(response, 'assistant');
+            
+            // Reset processing state
+            SecondBrain.state.isProcessing = false;
+        })
+        .catch(error => {
+            console.error('Error in message handling:', error);
+            
+            // Remove loading indicator
+            SecondBrain.removeLoadingIndicator();
+            
+            // Add error message to chat
+            const errorMessage = error.message || 'An error occurred while processing your request.';
+            
+            // Create a more user-friendly error message
+            let userFriendlyError = 'Sorry, I encountered an issue while processing your request.';
+            
+            if (errorMessage.includes('API key')) {
+                userFriendlyError = 'Please check your API key in the settings. It appears to be missing or invalid.';
+            } else if (errorMessage.includes('API request failed')) {
+                userFriendlyError = 'There was a problem connecting to the AI service. This could be due to network issues or service unavailability.';
+            } else if (errorMessage.includes('truncated') || errorMessage.includes('cut off')) {
+                userFriendlyError = 'Your question generated a very long response that was cut off. Try asking a more specific question.';
+            }
+            
+            // Add the technical details for debugging
+            userFriendlyError += '\n\nTechnical details: ' + errorMessage;
+            
+            // Add as system message with error class
+            const messageEl = document.createElement('div');
+            messageEl.className = 'chat-message system-message error';
+            
+            const contentEl = document.createElement('div');
+            contentEl.className = 'message-content';
+            contentEl.textContent = userFriendlyError;
+            
+            messageEl.appendChild(contentEl);
+            SecondBrain.dom.chatMessages.appendChild(messageEl);
+            
+            // Scroll to bottom
+            SecondBrain.dom.chatMessages.scrollTop = SecondBrain.dom.chatMessages.scrollHeight;
+            
+            // Reset processing state
+            SecondBrain.state.isProcessing = false;
+        });
 };
 
 /**
@@ -1106,7 +1164,7 @@ SecondBrain.toggleApiSettings = () => {
     
     const settingsIcon = toggleSettingsBtn.querySelector('.settings-icon');
     
-    // Using classList.toggle to add/remove the expanded class
+    // Using classList to add/remove the expanded class based on state
     const isExpanded = chatSettings.classList.toggle('expanded');
     SecondBrain.state.apiSettingsExpanded = isExpanded;
     
@@ -1205,7 +1263,7 @@ SecondBrain.init = () => {
         SecondBrain.loadApiSettings();
         
         // Create UI elements
-        SecondBrain.createChatButton();
+        SecondBrain.attachChatButton();
         SecondBrain.createChatModal();
         
         // Setup event listeners
