@@ -1,26 +1,11 @@
 /* --- second-brain.css --- */
 /* Styles for the Second Brain chat interface */
 
-/* Simple Brain Button in Navbar */
-.brain-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 8px;
-    border-radius: var(--border-radius);
-    transition: background-color var(--transition-speed) ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.brain-button:hover {
-    background-color: var(--hover-bg-color);
-}
-
+/* Brain Button Emoji Styling */
 .brain-emoji {
-    font-size: 1.2em;
-    display: block;
+    transition: transform 0.3s ease;
+    display: inline-block;
+    font-size: 1.5rem;
 }
 
 /* --- Chat Modal Styles --- */

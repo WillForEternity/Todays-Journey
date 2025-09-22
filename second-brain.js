@@ -812,8 +812,46 @@ SecondBrain.attachChatButton = () => {
     const chatButton = document.getElementById('brainBtn');
     if (chatButton) {
         chatButton.addEventListener('click', SecondBrain.showChatModal);
+        // Add hover animations
+        chatButton.addEventListener('mouseenter', SecondBrain.handleBrainHoverIn);
+        chatButton.addEventListener('mouseleave', SecondBrain.handleBrainHoverOut);
         // Store reference
         SecondBrain.dom.chatButton = chatButton;
+    }
+};
+
+/**
+ * Handles the brain icon animation on mouse enter - a gentle pulsing effect
+ */
+SecondBrain.handleBrainHoverIn = () => {
+    const brainEmoji = SecondBrain.dom.chatButton?.querySelector('.brain-emoji');
+    if (brainEmoji) {
+        // Scale up with a gentle pulse
+        brainEmoji.style.transition = 'transform 0.2s ease';
+        brainEmoji.style.transform = 'scale(1.2)';
+        
+        // Add a subtle pulse effect
+        setTimeout(() => {
+            brainEmoji.style.transition = 'transform 0.3s ease';
+            brainEmoji.style.transform = 'scale(1.25)';
+            
+            setTimeout(() => {
+                brainEmoji.style.transition = 'transform 0.3s ease';
+                brainEmoji.style.transform = 'scale(1.2)';
+            }, 300);
+        }, 200);
+    }
+};
+
+/**
+ * Handles the brain icon animation on mouse leave
+ */
+SecondBrain.handleBrainHoverOut = () => {
+    const brainEmoji = SecondBrain.dom.chatButton?.querySelector('.brain-emoji');
+    if (brainEmoji) {
+        // Reset to normal state
+        brainEmoji.style.transition = 'transform 0.3s ease';
+        brainEmoji.style.transform = 'scale(1)';
     }
 };
 

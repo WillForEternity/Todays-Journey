@@ -118,7 +118,8 @@ body {
 /* Header Button Common Styles */
 .settings-button,
 .picture-button,
-.sticker-button {
+.sticker-button,
+.brain-button {
     background: none;
     border: none;
     color: var(--text-color);
