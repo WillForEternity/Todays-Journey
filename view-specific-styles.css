@@ -81,7 +81,7 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
 /* --- [Calendar] Task List Styles --- */
 #taskList {
     list-style: none;
-    padding: 0 0 60px 0; /* Add 60px bottom padding for breathing room */
+    padding: 0 0 30px 0; /* Match the 30px top padding of daily-tasks-panel */
     margin: 0;
     flex-grow: 1;
     min-height: 0;
@@ -553,7 +553,7 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
 }
 #importantList { /* Specific list in calendar sidebar */
     list-style: none;
-    padding: 0 0 40px 0; /* Add 40px bottom padding for breathing room */
+    padding: 0 0 20px 0; /* Match the 20px top padding of important-tasks-container */
     margin: 0;
     overflow-y: auto;
     flex-grow: 1;
