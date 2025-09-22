@@ -144,6 +144,16 @@ body {
     border-color: transparent;
 }
 
+/* Brain Button Styles - Override any background hover */
+.brain-button:hover {
+    background-color: transparent;
+}
+
+.brain-button:focus {
+    outline: none;
+    border-color: transparent;
+}
+
 .gear-emoji {
     font-size: 2.75em;
     display: inline-block;

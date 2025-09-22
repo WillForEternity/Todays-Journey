@@ -810,6 +810,7 @@ SecondBrain.sendToLLM = async (userMessage, context) => {
  */
 SecondBrain.attachChatButton = () => {
     const chatButton = document.getElementById('brainBtn');
+    console.log('Attaching brain button', chatButton); // Debug log
     if (chatButton) {
         chatButton.addEventListener('click', SecondBrain.showChatModal);
         // Add hover animations
@@ -817,6 +818,9 @@ SecondBrain.attachChatButton = () => {
         chatButton.addEventListener('mouseleave', SecondBrain.handleBrainHoverOut);
         // Store reference
         SecondBrain.dom.chatButton = chatButton;
+        console.log('Brain button attached successfully'); // Debug log
+    } else {
+        console.error('Brain button not found!'); // Debug log
     }
 };
 
@@ -825,6 +829,7 @@ SecondBrain.attachChatButton = () => {
  */
 SecondBrain.handleBrainHoverIn = () => {
     const brainEmoji = SecondBrain.dom.chatButton?.querySelector('.brain-emoji');
+    console.log('Brain hover in triggered', brainEmoji); // Debug log
     if (brainEmoji) {
         // Scale up with a gentle pulse
         brainEmoji.style.transition = 'transform 0.2s ease';
