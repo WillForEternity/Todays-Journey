@@ -111,7 +111,7 @@ CalendarApp.getAllTasksDB = () => App.dbAction(App.config.TASK_STORE_NAME, 'read
  */
 CalendarApp.updateTaskColor = async (taskId, originalDate, newColor) => {
     const task = CalendarApp.findTaskInMemory(taskId, originalDate);
-    if (!task || task.time) return; // Only allow color changes for timeless tasks
+    if (!task) return; // Allow color changes for both timed and timeless tasks
 
     const oldColor = task.customColor || 'default';
     task.customColor = newColor;
@@ -502,8 +502,8 @@ CalendarApp.createTaskListItem = (task, displayDate) => {
         }, 500); // Updated to match the new 0.5s animation duration
     }
     
-    // Add custom color class if present and it's a timeless task
-    if (!task.time && task.customColor) {
+    // Add custom color class if present (for both timed and timeless tasks)
+    if (task.customColor) {
         li.classList.add(`task-color-${task.customColor}`);
     }
     
@@ -569,8 +569,8 @@ CalendarApp.createTaskListItem = (task, displayDate) => {
     li.appendChild(contentWrapper);
     li.appendChild(actionsDiv);
 
-    // Add color picker for timeless tasks (not completed)
-    if (!task.time && !completedState) {
+    // Add color picker for all tasks (not completed)
+    if (!completedState) {
         const colorPicker = CalendarApp.createColorPicker(task.id, task.originalDate, task.customColor || 'default');
         li.appendChild(colorPicker);
         
@@ -619,8 +619,8 @@ CalendarApp.createImportantTaskListItem = (taskInfo) => {
     const li = document.createElement('li');
     li.classList.toggle('completed', !!taskInfo.completed);
     
-    // Add custom color class if present and it's a timeless task
-    if (!taskInfo.time && taskInfo.customColor) {
+    // Add custom color class if present (for both timed and timeless tasks)
+    if (taskInfo.customColor) {
         li.classList.add(`task-color-${taskInfo.customColor}`);
     }
     

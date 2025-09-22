@@ -175,12 +175,12 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
     color: var(--completed-text-color);
 }
 
-/* Timeless tasks */
-#taskList li.timeless-task:not(.completed) {
+/* Timeless tasks (default color when no custom color is set) */
+#taskList li.timeless-task:not(.completed):not([class*="task-color-"]) {
     border-left-color: var(--timeless-task-color);
 }
 
-/* Custom colored tasks */
+/* Custom colored tasks (applies to both timed and timeless tasks) */
 #taskList li.task-color-default:not(.completed) {
     border-left-color: var(--task-color-default);
 }
@@ -300,7 +300,7 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
     transition: opacity 0.2s ease;
 }
 
-#taskList li.timeless-task:hover .color-picker-divider {
+#taskList li:hover .color-picker-divider {
     display: block;
     opacity: 1;
 }
@@ -340,11 +340,11 @@ body.calendar-view-active .notes-app-container.notes-view { display: none; }
 .color-amber { background-color: var(--task-color-amber); }
 .color-forest { background-color: var(--task-color-forest); }
 
-#taskList li.timeless-task {
+#taskList li {
     position: relative; /* Ensure color picker is positioned relative to the task item */
 }
 
-#taskList li.timeless-task:hover .color-picker {
+#taskList li:hover .color-picker {
     display: flex;
     opacity: 1;
     pointer-events: auto;
